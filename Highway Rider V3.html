@@ -1,0 +1,2414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGHWAY RIDER: APEX EDITION</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<style>
+:root {
+  color-scheme: dark;
+  --accent: #00e5ff;
+  --accent2: #ff2a5f;
+  --bg-dark: #060913;
+  --panel: rgba(10, 15, 28, 0.78);
+  --border: rgba(255, 255, 255, 0.14);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; height: 100%; width: 100%;
+  background: var(--bg-dark);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #fff;
+}
+canvas#c { display: block; width: 100%; height: 100%; }
+
+/* Touch & On-Screen Controls */
+.ctrl-btn {
+  position: absolute; display: flex; align-items: center; justify-content: center;
+  text-align: center; border-radius: 14px;
+  background: rgba(8, 14, 26, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 0.06em;
+  line-height: 1.15;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  cursor: pointer; z-index: 5; transition: transform 0.08s, background 0.08s;
+}
+.ctrl-btn.on, .ctrl-btn:active {
+  background: rgba(0, 229, 255, 0.45);
+  border-color: var(--accent);
+  transform: scale(0.95);
+}
+
+/* Main Menu / Garage Overlay */
+#menu-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  background: radial-gradient(circle at 70% 35%, rgba(0, 229, 255, 0.12), transparent 55%),
+              radial-gradient(circle at 20% 80%, rgba(255, 42, 95, 0.1), transparent 50%),
+              linear-gradient(135deg, rgba(5, 8, 18, 0.94), rgba(9, 14, 28, 0.97));
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  overflow-y: auto;
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px; border-bottom: 1px solid var(--border);
+  background: rgba(4, 7, 15, 0.6); flex-shrink: 0;
+}
+.brand { display: flex; flex-direction: column; }
+.brand-title {
+  font-size: clamp(22px, 3.5vw, 34px); font-weight: 900; letter-spacing: 0.14em;
+  background: linear-gradient(90deg, #ffffff, #00e5ff 55%, #ff2a5f);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  line-height: 1;
+}
+.brand-sub {
+  font-size: 10px; letter-spacing: 0.34em; color: #7e94b8; margin-top: 4px; font-weight: 700;
+}
+.nav-tabs { display: flex; gap: 10px; }
+.nav-tab {
+  padding: 10px 22px; border-radius: 10px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: #9ab0d4;
+  font-weight: 800; font-size: 12px; letter-spacing: 0.14em; cursor: pointer;
+  transition: all 0.2s;
+}
+.nav-tab.active {
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.22), rgba(0, 229, 255, 0.08));
+  border-color: var(--accent); color: #fff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+}
+
+/* Main Content Area */
+.menu-body {
+  flex: 1; display: grid; grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px; padding: 20px 28px; max-width: 1440px; width: 100%; margin: 0 auto;
+  align-items: stretch;
+}
+@media (max-width: 920px) {
+  .menu-body { grid-template-columns: 1fr; padding: 14px; }
+}
+
+/* Left Showcase Stage */
+.showcase-panel {
+  position: relative; border-radius: 22px; border: 1px solid var(--border);
+  background: radial-gradient(ellipse at 50% 60%, #16223c 0%, #070b16 80%);
+  display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden; min-height: 360px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.7);
+}
+#garage-canvas {
+  width: 100%; height: 100%; position: absolute; inset: 0; display: block;
+}
+.showcase-header {
+  position: relative; z-index: 2; padding: 18px 22px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  pointer-events: none;
+}
+.bike-badge {
+  display: inline-block; padding: 4px 10px; border-radius: 6px;
+  background: rgba(0, 229, 255, 0.16); border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 0.18em;
+}
+.bike-title {
+  font-size: clamp(22px, 3vw, 32px); font-weight: 900; letter-spacing: 0.05em;
+  margin: 6px 0 2px; text-shadow: 0 4px 18px rgba(0,0,0,0.8);
+}
+.bike-desc { font-size: 12px; color: #9eb3d6; max-width: 380px; }
+.view-toggle {
+  pointer-events: auto; display: flex; gap: 6px;
+}
+.view-btn {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(6, 10, 20, 0.7); color: #b5c7e6; font-size: 11px; font-weight: 700;
+  cursor: pointer;
+}
+.view-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(0, 229, 255, 0.15); }
+
+.showcase-footer {
+  position: relative; z-index: 2; padding: 16px 22px;
+  background: linear-gradient(to top, rgba(5, 8, 17, 0.95), rgba(5, 8, 17, 0.4) 80%, transparent);
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.spec-box {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 10px 12px;
+}
+.spec-lbl { font-size: 9px; letter-spacing: 0.16em; color: #7e94b8; font-weight: 700; }
+.spec-val { font-size: 18px; font-weight: 900; color: #fff; margin: 2px 0 6px; }
+.spec-val small { font-size: 10px; color: var(--accent); font-weight: 700; }
+.spec-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.spec-bar i { display: block; height: 100%; background: linear-gradient(90deg, #00e5ff, #ff2a5f); transition: width 0.3s; }
+
+/* Right Control Panel */
+.config-panel {
+  border-radius: 22px; border: 1px solid var(--border);
+  background: var(--panel); padding: 20px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
+}
+.sec-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: #8fa5cc;
+  margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+}
+
+/* Bike Selector List */
+.bike-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  max-height: 215px; overflow-y: auto; padding-right: 4px;
+}
+.bike-item {
+  padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.18s;
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+}
+.bike-item:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+.bike-item.sel {
+  border-color: var(--accent); background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.2);
+}
+.bike-item-top { display: flex; justify-content: space-between; align-items: center; }
+.bike-item-name { font-size: 12px; font-weight: 800; color: #fff; }
+.bike-item-spd { font-size: 11px; font-weight: 800; color: var(--accent); }
+.bike-item-class { font-size: 10px; color: #7e94b8; letter-spacing: 0.08em; }
+
+/* Customization Swatches & Options */
+.custom-row { display: flex; flex-direction: column; gap: 12px; }
+.swatch-list { display: flex; gap: 9px; flex-wrap: wrap; }
+.swatch {
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.25); transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+}
+.swatch.sel { transform: scale(1.16); border-color: #fff; box-shadow: 0 0 12px var(--accent); }
+.pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-btn {
+  flex: 1; min-width: 82px; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);
+  color: #bfd0ed; font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  cursor: pointer; text-align: center; transition: all 0.15s;
+}
+.pill-btn.sel {
+  background: var(--accent); color: #04101d; border-color: var(--accent);
+}
+
+/* Race Settings Grid */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.set-box label { display: block; font-size: 10px; letter-spacing: 0.16em; color: #8fa5cc; margin-bottom: 5px; font-weight: 700; }
+.seg-btns { display: flex; border-radius: 9px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); }
+.seg-btns button {
+  flex: 1; background: rgba(255,255,255,0.04); border: 0; color: #b8cae8;
+  padding: 7px 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; cursor: pointer;
+}
+.seg-btns button.on { background: var(--accent); color: #03111f; }
+
+.launch-btn {
+  width: 100%; padding: 16px; border: 0; border-radius: 14px;
+  background: linear-gradient(90deg, #00e5ff, #2979ff 50%, #ff2a5f);
+  color: #fff; font-size: 17px; font-weight: 900; letter-spacing: 0.22em;
+  cursor: pointer; text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 30px rgba(0, 229, 255, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.launch-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 38px rgba(0, 229, 255, 0.5); }
+
+/* Death / Wrecked Screen */
+#death-overlay {
+  position: absolute; inset: 0; z-index: 18; display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(160, 10, 25, 0.35), rgba(4, 6, 12, 0.92));
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  text-align: center; padding: 20px;
+}
+.wasted-title {
+  font-size: clamp(42px, 8vw, 82px); font-weight: 900; letter-spacing: 0.18em;
+  color: #ff2a4b; text-shadow: 0 0 35px rgba(255, 42, 75, 0.8);
+  margin: 0; animation: pulseRed 1.4s infinite alternate;
+}
+@keyframes pulseRed { from { transform: scale(0.98); } to { transform: scale(1.02); } }
+.wasted-sub { font-size: 14px; letter-spacing: 0.28em; color: #ff9eb0; margin: 6px 0 24px; font-weight: 700; }
+.death-stats {
+  display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-bottom: 28px;
+}
+.d-stat {
+  background: rgba(12, 16, 28, 0.85); border: 1px solid rgba(255, 42, 75, 0.35);
+  border-radius: 14px; padding: 14px 22px; min-width: 130px;
+}
+.d-stat span { display: block; font-size: 10px; letter-spacing: 0.18em; color: #9ab0d4; }
+.d-stat b { font-size: 24px; font-weight: 900; color: #fff; }
+.death-actions { display: flex; gap: 14px; }
+.btn-retry {
+  padding: 14px 36px; border-radius: 30px; border: 0;
+  background: linear-gradient(90deg, #ff2a4b, #ff6b35); color: #fff;
+  font-weight: 900; font-size: 15px; letter-spacing: 0.16em; cursor: pointer;
+  box-shadow: 0 6px 25px rgba(255, 42, 75, 0.45);
+}
+.btn-garage {
+  padding: 14px 28px; border-radius: 30px; border: 1.5px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.08); color: #fff;
+  font-weight: 800; font-size: 14px; letter-spacing: 0.14em; cursor: pointer;
+}
+
+.controls-footer {
+  text-align: center; font-size: 11px; color: #7187ad; padding: 8px 16px 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.controls-footer b { color: #b9cdef; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- Touch / On-Screen HUD Controls -->
+<div class="ctrl-btn" data-k="l" style="left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:62px;height:62px;font-size:22px">◀</div>
+<div class="ctrl-btn" data-k="r" style="left:84px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:62px;height:62px;font-size:22px">▶</div>
+<div class="ctrl-btn" data-k="brk" style="left:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:132px;height:44px">BRAKE</div>
+<div class="ctrl-btn" data-k="gas" style="right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:86px;height:86px;border-radius:50%;font-size:15px;border-color:rgba(0,229,255,0.5)">GAS</div>
+<div class="ctrl-btn" data-k="gu" style="right:14px;bottom:calc(108px + env(safe-area-inset-bottom,0px));width:52px;height:44px">GEAR<br>▲</div>
+<div class="ctrl-btn" data-k="gd" style="right:72px;bottom:calc(108px + env(safe-area-inset-bottom,0px));width:52px;height:44px">GEAR<br>▼</div>
+<div class="ctrl-btn" data-k="hn" style="right:130px;bottom:calc(108px + env(safe-area-inset-bottom,0px));width:52px;height:44px">HORN<br>📣</div>
+<div class="ctrl-btn" data-k="nos" style="left:14px;top:calc(96px + env(safe-area-inset-top,0px));width:68px;height:40px;color:#00ff9d;border-color:rgba(0,255,157,0.4)">NOS</div>
+<div class="ctrl-btn" data-k="cam" style="right:14px;top:calc(54px + env(safe-area-inset-top,0px));width:82px;height:34px">📷 VIEW</div>
+<div class="ctrl-btn" id="mn" style="right:14px;top:calc(14px + env(safe-area-inset-top,0px));width:82px;height:34px">☰ GARAGE</div>
+
+<!-- Death / Fatal Crash Screen -->
+<div id="death-overlay">
+  <h1 class="wasted-title">CRITICAL IMPACT</h1>
+  <div class="wasted-sub" id="death-reason">HIGH-SPEED COLLISION DETECTED</div>
+  <div class="death-stats">
+    <div class="d-stat"><span>IMPACT SPEED</span><b id="ds-spd">0 KM/H</b></div>
+    <div class="d-stat"><span>DISTANCE</span><b id="ds-dist">0.00 KM</b></div>
+    <div class="d-stat"><span>TRAFFIC PASSED</span><b id="ds-pass">0</b></div>
+    <div class="d-stat"><span>TOP SPEED</span><b id="ds-top">0 KM/H</b></div>
+  </div>
+  <div class="death-actions">
+    <button class="btn-retry" id="btn-retry">↻ RESPAWN NOW</button>
+    <button class="btn-garage" id="btn-to-garage">☰ RETURN TO GARAGE</button>
+  </div>
+</div>
+
+<!-- AAA Home Menu & Custom Garage -->
+<div id="menu-overlay">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-title">HIGHWAY RIDER <span style="font-weight:300;opacity:0.8">APEX</span></div>
+      <div class="brand-sub">SUPERBIKE TUNING &amp; ENDLESS HIGHWAY SIMULATOR</div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="garage">🏍️ SUPERBIKE GARAGE</button>
+      <button class="nav-tab" data-tab="race">🏁 WORLD &amp; TRAFFIC</button>
+    </div>
+  </div>
+
+  <div class="menu-body">
+    <!-- Left: Interactive High-Res Bike Preview -->
+    <div class="showcase-panel">
+      <canvas id="garage-canvas" width="900" height="620"></canvas>
+      <div class="showcase-header">
+        <div>
+          <span class="bike-badge" id="g-badge">1000CC TRACK WEAPON</span>
+          <h2 class="bike-title" id="g-title">KAWASAKI NINJA ZX-10RR</h2>
+          <div class="bike-desc" id="g-desc">WSBK championship aerodynamics with Akrapovič titanium exhaust and Öhlins electronic suspension.</div>
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn on" id="v-rear">3/4 REAR VIEW</button>
+          <button class="view-btn" id="v-side">PROFILE VIEW</button>
+        </div>
+      </div>
+
+      <div class="showcase-footer">
+        <div class="spec-box">
+          <div class="spec-lbl">TOP SPEED</div>
+          <div class="spec-val" id="sp-top">308 <small>KM/H</small></div>
+          <div class="spec-bar"><i id="bar-top" style="width:78%"></i></div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">ACCELERATION</div>
+          <div class="spec-val" id="sp-acc">2.8 <small>0-100s</small></div>
+          <div class="spec-bar"><i id="bar-acc" style="width:75%"></i></div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">HANDLING / GRIP</div>
+          <div class="spec-val" id="sp-hnd">92 <small>PTS</small></div>
+          <div class="spec-bar"><i id="bar-hnd" style="width:88%"></i></div>
+        </div>
+        <div class="spec-box">
+          <div class="spec-lbl">POWER / WEIGHT</div>
+          <div class="spec-val" id="sp-pwr">214 <small>HP</small></div>
+          <div class="spec-bar"><i id="bar-pwr" style="width:82%"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Selection & Customization -->
+    <div class="config-panel">
+      <!-- Tab 1: Garage & Customizer -->
+      <div id="tab-garage" style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div class="sec-title"><span>SELECT SUPERBIKE (6 MACHINES)</span><span style="color:var(--accent)" id="bike-idx">01 / 06</span></div>
+          <div class="bike-grid" id="bike-list"></div>
+        </div>
+
+        <div class="custom-row">
+          <div>
+            <div class="sec-title"><span>FAIRING LIVERY &amp; PAINT FINISH</span><span id="paint-name" style="color:#fff">FACTORY LIVERY</span></div>
+            <div class="swatch-list" id="paint-swatches"></div>
+          </div>
+
+          <div>
+            <div class="sec-title"><span>WHEEL RIM ACCENT</span><span id="rim-name" style="color:#fff">GOLD MAGNESIUM</span></div>
+            <div class="swatch-list" id="rim-swatches"></div>
+          </div>
+
+          <div>
+            <div class="sec-title"><span>TYRE COMPOUND (AFFECTS GRIP &amp; TOP SPEED)</span></div>
+            <div class="pill-group" id="tyre-pills"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Environment & Settings -->
+      <div id="tab-race" style="display:none;flex-direction:column;gap:14px">
+        <div class="sec-title"><span>ENVIRONMENT &amp; SIMULATION SETUP</span></div>
+        <div class="settings-grid" id="settings-grid"></div>
+      </div>
+
+      <div>
+        <button class="launch-btn" id="go">IGNITE &amp; RIDE ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-footer">
+    <b>← / →</b> or <b>A / D</b> Lean &amp; Steer &nbsp;·&nbsp; <b>↑ / W</b> Throttle &nbsp;·&nbsp; <b>↓ / S</b> Dual Brembo Brakes &nbsp;·&nbsp;
+    <b>E / Q</b> Shift Gears &nbsp;·&nbsp; <b>N</b> Nitrous &nbsp;·&nbsp; <b>C</b> Switch 1st / 3rd Person &nbsp;·&nbsp; <b>H</b> Horn &nbsp;·&nbsp; <b>R</b> Instant Reset
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const gcv = document.getElementById('garage-canvas'), gg = gcv.getContext('2d');
+
+const SL = 140, N = 4200, RW = 2000, CH = 1000, CD = 0.84, DN = 300, PZ = CH * CD, TL = N * SL, U = 40;
+
+// 6 High-Detail Superbikes
+const BIKES = [
+  {
+    id: 'zx10rr', name: 'KAWASAKI NINJA ZX-10RR', badge: '998CC WSBK HOMOLOGATION',
+    desc: 'Aggressive aerodynamic winglets, Showa BFF forks, and high-revving inline-four screamer.',
+    top: 308, P: 10.8, h: 1.04, r2: 2.01, hp: 214, z100: '2.8',
+    sp: 0.72, ac: 0.74, hd: 0.88,
+    m: '#28d828', a: '#111418', s: '#d8ff2a', su: '#15191f', pipe: 'titanium', twinExhaust: false
+  },
+  {
+    id: 'r1m', name: 'YAMAHA YZF-R1M CARBON', badge: '998CC CROSSPLANE CP4',
+    desc: 'Full carbon-fiber bodywork, Öhlins NPX electronic suspension, and unmistakable crossplane growl.',
+    top: 318, P: 11.2, h: 1.12, r2: 1.5, hp: 200, z100: '2.7',
+    sp: 0.76, ac: 0.78, hd: 0.96,
+    m: '#1c52e8', a: '#eef3fc', s: '#00d4ff', su: '#0d1736', pipe: 'carbon', twinExhaust: false
+  },
+  {
+    id: 'cbr', name: 'HONDA CBR1000RR-R SP', badge: '1000CC MOTOGP DERIVED',
+    desc: 'HRC tri-color aero package with internal bi-plane winglets and titanium Akrapovič megaphone.',
+    top: 332, P: 11.8, h: 1.0, r2: 2.0, hp: 218, z100: '2.6',
+    sp: 0.84, ac: 0.84, hd: 0.86,
+    m: '#e01b24', a: '#f5f7fa', s: '#1947ba', su: '#171922', pipe: 'titanium', twinExhaust: false
+  },
+  {
+    id: 'panigale', name: 'DUCATI PANIGALE V4 R', badge: '998CC DESMOSEDICI STRADALE',
+    desc: 'Bologna bullet with dry clutch, carbon wings, single-sided swingarm, and twin under-tail exhausts.',
+    top: 344, P: 12.4, h: 1.08, r2: 1.75, hp: 240, z100: '2.5',
+    sp: 0.90, ac: 0.91, hd: 0.92,
+    m: '#ff1e27', a: '#141416', s: '#ffffff', su: '#1c1c20', pipe: 'twin', twinExhaust: true
+  },
+  {
+    id: 's1000rr', name: 'BMW M 1000 RR', badge: '999CC M COMPETITION',
+    desc: 'M Motorsport carbon wheels, massive downforce aero blades, and ShiftCam titanium valvetrain.',
+    top: 338, P: 12.1, h: 1.10, r2: 1.9, hp: 212, z100: '2.6',
+    sp: 0.87, ac: 0.88, hd: 0.94,
+    m: '#f4f6fa', a: '#121622', s: '#00a8ff', su: '#161b29', pipe: 'carbon', twinExhaust: false
+  },
+  {
+    id: 'h2r', name: 'KAWASAKI NINJA H2R', badge: '998CC SUPERCHARGED HYPERBIKE',
+    desc: 'Centrifugal supercharger pumping 310 HP through mirror-coated black chrome aero fairings.',
+    top: 385, P: 14.2, h: 0.94, r2: 2.25, hp: 310, z100: '2.2',
+    sp: 1.0, ac: 1.0, hd: 0.80,
+    m: '#1b2028', a: '#090b0e', s: '#00ff66', su: '#0d1014', pipe: 'titanium', twinExhaust: false
+  }
+];
+
+const PAINTS = [
+  { name: 'FACTORY LIVERY', m: null, a: null, s: null },
+  { name: 'MIDNIGHT STEALTH', m: '#181b22', a: '#090a0d', s: '#00e5ff' },
+  { name: 'ROSSO CORSA', m: '#e61923', a: '#111215', s: '#ffd000' },
+  { name: 'HYPER CYAN', m: '#00b8d4', a: '#0c1524', s: '#ffffff' },
+  { name: 'SOLAR GOLD', m: '#f59e0b', a: '#141418', s: '#fff3c4' },
+  { name: 'PHANTOM VIOLET', m: '#7c3aed', a: '#110c24', s: '#00f5d4' },
+  { name: 'ARCTIC PEARL', m: '#eef2f7', a: '#181e2c', s: '#ff2a5f' },
+  { name: 'ACID LIME', m: '#65a30d', a: '#0f1410', s: '#bef264' }
+];
+
+const RIMS = [
+  { name: 'GOLD MAGNESIUM', c: '#eab308' },
+  { name: 'RACING RED', c: '#ef4444' },
+  { name: 'ELECTRIC CYAN', c: '#00e5ff' },
+  { name: 'ANODIZED SILVER', c: '#cbd5e1' },
+  { name: 'NEON LIME', c: '#84cc16' },
+  { name: 'GLOSS BLACK', c: '#27272a' }
+];
+
+const TYRES = [
+  { id: 'street', name: 'SPORT STREET', grip: 1.0, topMul: 1.0, tread: 'street', stripe: '#38bdf8' },
+  { id: 'semi', name: 'PIRELLI CORSA', grip: 1.12, topMul: 0.99, tread: 'semi', stripe: '#facc15' },
+  { id: 'slick', name: 'PRO SLICK', grip: 1.24, topMul: 1.03, tread: 'slick', stripe: '#f43f5e' }
+];
+
+const PAL = [
+  { sk: ['#1e57b8', '#68a8eb', '#e8dfd0'], fg: '232,223,208', mt: ['#7e92bd', '#5b8270', '#3a614e'], ov: null },
+  { sk: ['#1f2059', '#b84a6f', '#ffae6b'], fg: '255,174,107', mt: ['#7d5e8c', '#5e4969', '#3d3047'], ov: 'rgba(255,100,50,0.14)' },
+  { sk: ['#04081c', '#0a163d', '#22305e'], fg: '24,35,68', mt: ['#141c3b', '#0d142e', '#080d20'], ov: 'rgba(4,8,26,0.62)' }
+];
+
+const OP = [
+  ['time', 'TIME OF DAY', ['DAY', 'SUNSET', 'NIGHT']],
+  ['traf', 'TRAFFIC DENSITY', ['LIGHT', 'MEDIUM', 'HEAVY']],
+  ['wx', 'WEATHER', ['CLEAR', 'RAIN']],
+  ['sc', 'ENVIRONMENT', ['HIGHWAY', 'METRO CITY']],
+  ['mus', 'SYNTH AUDIO', ['ON', 'OFF']],
+  ['q', 'RENDER QUALITY', ['HIGH', 'ULTRA']]
+];
+
+const S = {
+  sc: 0, time: 0, traf: 1, wx: 0, mus: 0, q: 1,
+  bike: 0, paint: 0, rim: 0, tyre: 1, garageView: 0
+};
+
+const hs = i => { const x = Math.sin(i * 127.1) * 43758.5; return x - Math.floor(x); };
+let W, H, hY, K, Kx, u, bikeY, gR, vig;
+const segs = [];
+for (let i = 0; i < N; i++) {
+  const a = 2 * Math.PI * i / N;
+  segs.push({
+    i, h: hs(i),
+    curve: 4.0 * Math.sin(7 * a) + 2.6 * Math.sin(19 * a + 1) + 1.3 * Math.sin(37 * a + 2),
+    y: 1850 * Math.sin(5 * a) + 780 * Math.sin(13 * a + 2),
+    c: null, hid: true
+  });
+}
+
+function rs() {
+  const d = [Math.min(Math.max(devicePixelRatio || 1, 1.5), 2), 2.5][S.q];
+  W = innerWidth; H = innerHeight;
+  cv.width = W * d; cv.height = H * d;
+  g.setTransform(d, 0, 0, d, 0, 0);
+  gR = Math.max(54, Math.min(92, (W - 260) / 2));
+  hY = H * 0.4;
+  bikeY = H - gR * 1.55 - 12;
+  K = bikeY - hY;
+  Kx = Math.min(K * 1.35, W * 0.34);
+  u = Math.min(Kx / 8.8, H / 19);
+  vig = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.36, W / 2, H / 2, Math.max(W, H) * 0.8);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.52)');
+}
+addEventListener('resize', rs);
+rs();
+
+// Game State
+let nos = 1, cam = 1, pos = 0, px = 0, v = 0, gear = 1, rpm = 1200, clutch = 0;
+let steer = 0, lean = 0, shake = 0, flash = 0, crashCD = 0, dist = 0, T = 0, passed = 0, topV = 0;
+let bgx = 0, dV = 0, msgT = 0, msgS = '', go = false, camY = 0, cx0 = 0;
+let B = BIKES[0], GM, kd;
+
+// Damage, Screen Cracks, Blood & Death Animation State
+let hp = 100;
+let dead = false;
+let deathT = 0;
+let deathMode = 'highside'; // 'highside' or 'ragdoll'
+let deathSpd = 0;
+let bikeSpin = 0, bikeFlyX = 0, bikeFlyY = 0, bikeVy = 0;
+let sparks = [];
+let screenCracks = [];
+let bloodSplatters = [];
+
+const I = { l: 0, r: 0, gas: 0, brk: 0, nos: 0 };
+const cols = ['#e63946', '#f1c40f', '#2ecc71', '#3498db', '#ecf0f1', '#9b59b6', '#ff7f11', '#2b2d42', '#1abc9c', '#b5651d'];
+const cars = [], rain = [], stars = [], cl = [];
+for (let i = 0; i < 80; i++) stars.push([Math.random(), Math.random() * 0.9, Math.random()]);
+for (let i = 0; i < 7; i++) cl.push([Math.random() * 2400, 0.2 + Math.random() * 0.55, 0.7 + Math.random() * 0.9]);
+for (let i = 0; i < 150; i++) rain.push([Math.random(), Math.random(), 0.6 + Math.random() * 0.6]);
+
+function getActiveBike() {
+  const base = BIKES[S.bike];
+  const pt = PAINTS[S.paint];
+  const rm = RIMS[S.rim];
+  const ty = TYRES[S.tyre];
+  return {
+    ...base,
+    m: pt.m || base.m,
+    a: pt.a || base.a,
+    s: pt.s || base.s,
+    rimColor: rm.c,
+    tyre: ty,
+    effTop: Math.round(base.top * ty.topMul),
+    effGrip: base.h * ty.grip
+  };
+}
+
+function spawn() {
+  cars.length = 0;
+  const n = [18, 32, 50][S.traf];
+  for (let i = 0; i < n; i++) {
+    const t = Math.random() < 0.22 ? 1 : 0;
+    const b = t ? 52 + Math.random() * 25 : 58 + Math.random() * 62;
+    cars.push({
+      z: 3600 + i * (TL - 4200) / n + Math.random() * 1200,
+      x: [-0.667, 0, 0.667][i % 3],
+      s: b, b, t, c: cols[i % cols.length], ah: false
+    });
+  }
+}
+
+function applyBikeConfig() {
+  B = getActiveBike();
+  GM = [0, 0.21, 0.36, 0.52, 0.68, 0.84, 1.015].map(k => k * B.effTop);
+  kd = (0.6 * 0.92 * B.P - 1) / (B.effTop * B.effTop);
+}
+
+function addDamageEffects(severity) {
+  // severity: 0.2 (light scrape) to 1.0 (heavy low-speed hit)
+  const count = Math.ceil(severity * 4);
+  for (let k = 0; k < count; k++) {
+    const cx = W * (0.15 + Math.random() * 0.7);
+    const cy = H * (0.15 + Math.random() * 0.7);
+    const branches = [];
+    const numB = 5 + Math.floor(Math.random() * 6);
+    for (let b = 0; b < numB; b++) {
+      let ang = (b / numB) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      let pts = [{ x: cx, y: cy }];
+      let curX = cx, curY = cy;
+      const steps = 3 + Math.floor(Math.random() * 4);
+      for (let s = 0; s < steps; s++) {
+        const len = (20 + Math.random() * 45) * severity;
+        ang += (Math.random() - 0.5) * 0.65;
+        curX += Math.cos(ang) * len;
+        curY += Math.sin(ang) * len;
+        pts.push({ x: curX, y: curY });
+      }
+      branches.push(pts);
+    }
+    screenCracks.push({ cx, cy, branches, alpha: 0.85 });
+  }
+
+  // Add blood splatter on screen edges / visor
+  const bloodCount = Math.ceil(severity * 7);
+  for (let b = 0; b < bloodCount; b++) {
+    const edge = Math.random() < 0.5;
+    const bx = edge ? (Math.random() < 0.5 ? Math.random() * W * 0.25 : W - Math.random() * W * 0.25) : Math.random() * W;
+    const by = Math.random() * H;
+    const rad = (18 + Math.random() * 55) * severity;
+    const drops = [];
+    for (let d = 0; d < 6; d++) {
+      const a = Math.random() * Math.PI * 2;
+      const distD = rad * (0.6 + Math.random() * 0.9);
+      drops.push({ dx: Math.cos(a) * distD, dy: Math.sin(a) * distD, r: 2 + Math.random() * 7 });
+    }
+    bloodSplatters.push({ x: bx, y: by, r: rad, drops, alpha: 0.55 + severity * 0.3, drip: 0 });
+  }
+}
+
+function triggerDeath(impactSpeed) {
+  dead = true;
+  deathT = 0;
+  deathSpd = Math.round(impactSpeed);
+  bikeSpin = 0;
+  bikeFlyX = 0;
+  bikeFlyY = 0;
+  bikeVy = -420 - Math.min(350, impactSpeed * 1.1);
+  shake = 1.6;
+  flash = 1.2;
+  addDamageEffects(1.0);
+  for (let i = 0; i < 65; i++) {
+    sparks.push({
+      x: W / 2 + (Math.random() - 0.5) * 80,
+      y: bikeY - 30,
+      vx: (Math.random() - 0.5) * 750,
+      vy: -150 - Math.random() * 550,
+      life: 0.6 + Math.random() * 0.9,
+      col: Math.random() < 0.65 ? '#ffaa22' : '#ff3344'
+    });
+  }
+  if (AC) nz(AC.currentTime, 0.85, 1.0, 180, MS);
+
+  setTimeout(() => {
+    if (!dead) return;
+    document.getElementById('ds-spd').textContent = deathSpd + ' KM/H';
+    document.getElementById('ds-dist').textContent = (dist / 144 / 1000).toFixed(2) + ' KM';
+    document.getElementById('ds-pass').textContent = passed;
+    document.getElementById('ds-top').textContent = Math.round(topV) + ' KM/H';
+    document.getElementById('death-reason').textContent =
+      deathSpd >= 135 ? `FATAL IMPACT AT ${deathSpd} KM/H` : 'BIKE INTEGRITY DEPLETED';
+    document.getElementById('death-overlay').style.display = 'flex';
+  }, 1500);
+}
+
+function reset() {
+  pos = 0; px = 0; v = 0; gear = 1; rpm = 1200; clutch = 0;
+  dist = 0; T = 0; passed = 0; topV = 0; nos = 1;
+  hp = 100; dead = false; deathT = 0;
+  screenCracks.length = 0;
+  bloodSplatters.length = 0;
+  sparks.length = 0;
+  document.getElementById('death-overlay').style.display = 'none';
+  spawn();
+}
+
+applyBikeConfig();
+reset();
+
+const RT = [0, 3.1, 2.2, 1.65, 1.3, 1.08, 0.92];
+function msg(s) { msgS = s; msgT = 1.6; }
+function shift(d) {
+  if (dead) return;
+  const n = gear + d;
+  if (n < 1 || n > 6) return;
+  if (d < 0 && v > GM[n] * 1.04) { msg('RPM TOO HIGH'); return; }
+  gear = n; clutch = 0.16;
+}
+
+// ---- Audio Engine ----
+let AC, eg, o1, o2, o3, lp, wg, mg, MS, NB, hn = null, nextT = 0, stp = 0;
+function initAudio() {
+  if (AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const m = AC.createGain(); m.gain.value = 0.8; m.connect(AC.destination); MS = m;
+  eg = AC.createGain(); eg.gain.value = 0;
+  lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 800; lp.connect(eg); eg.connect(m);
+  o1 = AC.createOscillator(); o1.type = 'sawtooth';
+  o2 = AC.createOscillator(); o2.type = 'square';
+  o3 = AC.createOscillator(); o3.type = 'triangle';
+  const g2 = AC.createGain(); g2.gain.value = 0.3;
+  const g3 = AC.createGain(); g3.gain.value = 0.7;
+  o1.connect(lp); o2.connect(g2); g2.connect(lp); o3.connect(g3); g3.connect(lp);
+  [o1, o2, o3].forEach(o => o.start());
+  NB = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+  const d = NB.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const ns = AC.createBufferSource(); ns.buffer = NB; ns.loop = true;
+  const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 0.5;
+  wg = AC.createGain(); wg.gain.value = 0; ns.connect(bp); bp.connect(wg); wg.connect(m); ns.start();
+  mg = AC.createGain(); mg.gain.value = S.mus ? 0 : 0.28; mg.connect(m);
+  nextT = AC.currentTime + 0.1;
+  setInterval(sched, 40);
+}
+function tn(f, t, d, ty, vl, fc) {
+  const o = AC.createOscillator(), gn = AC.createGain(), fl = AC.createBiquadFilter();
+  o.type = ty; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = fc;
+  gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(vl, t + 0.01);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(fl); fl.connect(gn); gn.connect(mg); o.start(t); o.stop(t + d + 0.05);
+}
+function nz(t, d, vl, fc, dst) {
+  const s = AC.createBufferSource(); s.buffer = NB;
+  const f = AC.createBiquadFilter(); f.type = dst ? 'lowpass' : 'highpass'; f.frequency.value = fc;
+  const gn = AC.createGain(); gn.gain.setValueAtTime(vl, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  s.connect(f); f.connect(gn); gn.connect(dst || mg); s.start(t, Math.random(), d + 0.05);
+}
+function kick(t) {
+  const o = AC.createOscillator(), gn = AC.createGain();
+  o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+  gn.gain.setValueAtTime(0.9, t); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  o.connect(gn); gn.connect(mg); o.start(t); o.stop(t + 0.25);
+}
+const CHD = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], BS = [33, 29, 36, 31], mf = n => 440 * 2 ** ((n - 69) / 12);
+function pst(s, t) {
+  const c = (s >> 4) & 3, k = s & 15;
+  if (k % 4 == 0) kick(t);
+  if (k % 2 == 1) nz(t, 0.05, 0.18, 7000);
+  if (k % 2 == 0) tn(mf(BS[c] + (k % 8 == 6 ? 12 : 0)), t, 0.2, 'sawtooth', 0.3, 600);
+  tn(mf(CHD[c][[0, 1, 2, 1][k & 3]] + 12), t, 0.14, 'square', 0.08, 2600);
+  if (k == 0) CHD[c].forEach(n => tn(mf(n), t, 1.9, 'triangle', 0.05, 1200));
+}
+function sched() { if (!AC) return; while (nextT < AC.currentTime + 0.25) { pst(stp, nextT); nextT += 0.127; stp++; } }
+function horn(on) {
+  if (!AC || dead) return;
+  if (on && !hn) {
+    hn = [392, 494].map(f => {
+      const o = AC.createOscillator(), gn = AC.createGain(), fl = AC.createBiquadFilter();
+      o.type = 'square'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = 1600;
+      gn.gain.value = 0.1; o.connect(fl); fl.connect(gn); gn.connect(MS); o.start(); return [o, gn];
+    });
+  } else if (!on && hn) {
+    hn.forEach(([o, gn]) => { gn.gain.setTargetAtTime(0, AC.currentTime, 0.02); o.stop(AC.currentTime + 0.1); });
+    hn = null;
+  }
+}
+function engSnd() {
+  if (!AC) return;
+  const t = AC.currentTime, f = rpm / 30;
+  o1.frequency.setTargetAtTime(f, t, 0.03);
+  o2.frequency.setTargetAtTime(f * B.r2, t, 0.03);
+  o3.frequency.setTargetAtTime(f / 2, t, 0.03);
+  lp.frequency.setTargetAtTime(500 + rpm * 0.45 + I.gas * 700, t, 0.05);
+  eg.gain.setTargetAtTime(go && !dead ? 0.05 + 0.1 * (I.gas ? 1 : 0.4) : 0.015, t, 0.05);
+  wg.gain.setTargetAtTime(Math.min(1, v / 300) * 0.14 + (S.wx ? 0.05 : 0), t, 0.1);
+}
+
+// ---- Helper Gradient & Rounded Rect ----
+function lg(c, x0, y0, x1, y1, st) {
+  const q = c.createLinearGradient(x0, y0, x1, y1);
+  st.forEach((s, i) => q.addColorStop(i / (st.length - 1), s));
+  return q;
+}
+function rr(c, x, y, w, h, r, fill, stroke, lw) {
+  c.beginPath();
+  c.roundRect(x, y, w, h, r);
+  if (fill) { c.fillStyle = fill; c.fill(); }
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); }
+}
+
+// ============================================================================
+// AAA HIGH-DETAIL SUPERBIKE RENDERER (3RD PERSON REAR-3/4 & GARAGE PROFILE)
+// ============================================================================
+function drawSuperbikeRear(c, u, bike, lean, brake, wheelSpin) {
+  c.save();
+  // Ground contact shadow with soft penumbra
+  const shGrad = c.createRadialGradient(0, 0, u * 0.2, 0, 0, u * 2.3);
+  shGrad.addColorStop(0, 'rgba(0,0,0,0.75)');
+  shGrad.addColorStop(0.6, 'rgba(0,0,0,0.35)');
+  shGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = shGrad;
+  c.beginPath();
+  c.ellipse(0, 0.05 * u, u * 2.2, u * 0.42, 0, 0, Math.PI * 2);
+  c.fill();
+
+  c.rotate(lean);
+
+  const rimCol = bike.rimColor || '#eab308';
+  const tyreObj = bike.tyre || TYRES[1];
+
+  // 1. REAR TIRE (Wide 200/55 ZR17 profile with realistic rubber shading & tread)
+  const tw = 1.28 * u, th = 2.35 * u, tyY = -2.25 * u;
+  const tyreGrad = lg(c, -tw * 0.5, 0, tw * 0.5, 0, ['#07080a', '#1b1e24', '#2e323b', '#181a20', '#060709']);
+  rr(c, -tw * 0.5, tyY, tw, th, 0.48 * u, tyreGrad, '#000', 0.04 * u);
+
+  // Tyre compound stripe & animated tread grooves
+  c.save();
+  c.beginPath();
+  c.roundRect(-tw * 0.5, tyY, tw, th, 0.48 * u);
+  c.clip();
+
+  // Rim edge glimpse on sides of wide tyre
+  c.fillStyle = rimCol;
+  c.fillRect(-tw * 0.5, tyY + 0.3 * u, 0.07 * u, th - 0.6 * u);
+  c.fillRect(tw * 0.5 - 0.07 * u, tyY + 0.3 * u, 0.07 * u, th - 0.6 * u);
+
+  // Compound sidewall accent
+  c.fillStyle = tyreObj.stripe;
+  c.globalAlpha = 0.7;
+  c.fillRect(-tw * 0.43, tyY + 0.2 * u, 0.035 * u, th - 0.4 * u);
+  c.fillRect(tw * 0.395, tyY + 0.2 * u, 0.035 * u, th - 0.4 * u);
+  c.globalAlpha = 1;
+
+  if (tyreObj.tread !== 'slick') {
+    c.strokeStyle = 'rgba(0,0,0,0.68)';
+    c.lineWidth = tyreObj.tread === 'street' ? 0.065 * u : 0.045 * u;
+    const phase = (wheelSpin % 1) * 0.34 * u;
+    for (let i = -1; i < 8; i++) {
+      const yy = tyY + phase + i * 0.34 * u;
+      c.beginPath();
+      c.moveTo(-0.46 * u, yy);
+      c.lineTo(-0.12 * u, yy + 0.14 * u);
+      c.moveTo(0.46 * u, yy + 0.17 * u);
+      c.lineTo(0.12 * u, yy + 0.31 * u);
+      c.stroke();
+    }
+  } else {
+    // Glossy heat-cycled sheen on pro slicks
+    c.fillStyle = 'rgba(255,255,255,0.06)';
+    c.fillRect(-0.18 * u, tyY, 0.36 * u, th);
+  }
+  c.restore();
+
+  // 2. REAR SWINGARM, MONOSHOCK & CHAIN DRIVE
+  // Left Chain & Gold Sprocket
+  c.fillStyle = '#1d2026';
+  c.beginPath();
+  c.moveTo(-0.76 * u, -1.1 * u);
+  c.lineTo(-0.62 * u, -2.1 * u);
+  c.lineTo(-0.48 * u, -2.1 * u);
+  c.lineTo(-0.56 * u, -1.1 * u);
+  c.closePath();
+  c.fill();
+  // Gold drive chain links
+  c.strokeStyle = '#d4af37';
+  c.lineWidth = 0.06 * u;
+  c.setLineDash([0.08 * u, 0.05 * u]);
+  c.beginPath();
+  c.moveTo(-0.66 * u, -1.15 * u);
+  c.lineTo(-0.56 * u, -2.05 * u);
+  c.stroke();
+  c.setLineDash([]);
+
+  // Right Brushed Aluminum Swingarm & Rear Brake Caliper
+  c.fillStyle = lg(c, 0.45 * u, 0, 0.85 * u, 0, ['#484e59', '#9aa3b2', '#353942']);
+  c.beginPath();
+  c.moveTo(0.55 * u, -1.1 * u);
+  c.lineTo(0.76 * u, -1.15 * u);
+  c.lineTo(0.64 * u, -2.1 * u);
+  c.lineTo(0.48 * u, -2.1 * u);
+  c.closePath();
+  c.fill();
+  // Brembo rear caliper
+  rr(c, 0.56 * u, -1.65 * u, 0.18 * u, 0.34 * u, 0.05 * u, '#dc2626');
+
+  // Öhlins Gold Rear Shock Spring visible above tire
+  rr(c, -0.14 * u, -2.42 * u, 0.28 * u, 0.42 * u, 0.06 * u, '#eab308');
+  c.strokeStyle = '#18181b';
+  c.lineWidth = 0.05 * u;
+  for (let s = 0; s < 4; s++) {
+    c.beginPath();
+    c.moveTo(-0.14 * u, (-2.35 + s * 0.09) * u);
+    c.lineTo(0.14 * u, (-2.32 + s * 0.09) * u);
+    c.stroke();
+  }
+
+  // 3. EXHAUST SYSTEM (Akrapovič Titanium / Carbon Megaphone or Twin Under-Tail)
+  if (bike.twinExhaust) {
+    for (const sd of [-1, 1]) {
+      const ex = sd * 0.54 * u;
+      rr(c, ex - 0.16 * u, -2.55 * u, 0.32 * u, 0.55 * u, 0.12 * u,
+        lg(c, ex - 0.16 * u, 0, ex + 0.16 * u, 0, ['#3f444e', '#cbd5e1', '#333740']));
+      c.fillStyle = '#090a0d';
+      c.beginPath(); c.arc(ex, -2.28 * u, 0.11 * u, 0, 7); c.fill();
+    }
+  } else {
+    // Mid-pipe with heat-blued titanium weld rings
+    c.strokeStyle = lg(c, 0.4 * u, -1.5 * u, 0.9 * u, -0.6 * u, ['#60a5fa', '#c084fc', '#f59e0b', '#94a3b8']);
+    c.lineWidth = 0.24 * u;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(0.45 * u, -1.85 * u);
+    c.quadraticCurveTo(0.82 * u, -1.45 * u, 0.84 * u, -0.75 * u);
+    c.stroke();
+
+    // Main Angled Muffler Canister
+    c.save();
+    c.translate(0.84 * u, -1.05 * u);
+    c.rotate(-0.14);
+    const canGrad = bike.pipe === 'carbon'
+      ? lg(c, -0.24 * u, 0, 0.24 * u, 0, ['#090a0d', '#272b33', '#111317'])
+      : lg(c, -0.24 * u, 0, 0.24 * u, 0, ['#525866', '#e2e8f0', '#64748b']);
+    rr(c, -0.23 * u, -0.75 * u, 0.46 * u, 1.35 * u, 0.18 * u, canGrad, '#1e293b', 0.03 * u);
+    // Carbon end-cap & exhaust bore
+    rr(c, -0.21 * u, 0.35 * u, 0.42 * u, 0.28 * u, 0.12 * u, '#0f1115');
+    c.fillStyle = '#050507';
+    c.beginPath(); c.arc(0, 0.48 * u, 0.13 * u, 0, 7); c.fill();
+    // Exhaust heat glow on high RPM / NOS
+    if (I.nos && nos > 0 && I.gas) {
+      c.fillStyle = '#00f0ff';
+      c.shadowColor = '#00f0ff';
+      c.shadowBlur = u * 0.9;
+      c.beginPath(); c.arc(0, 0.48 * u, 0.11 * u, 0, 7); c.fill();
+      c.shadowBlur = 0;
+    }
+    c.restore();
+  }
+
+  // 4. SCULPTED TAIL SECTION, AERO VENTS & LED TAIL LIGHT
+  // Rear fender / license plate bracket
+  c.fillStyle = '#0d0f13';
+  c.beginPath();
+  c.moveTo(-0.16 * u, -2.15 * u);
+  c.lineTo(0.16 * u, -2.15 * u);
+  c.lineTo(0.24 * u, -1.45 * u);
+  c.lineTo(-0.24 * u, -1.45 * u);
+  c.closePath();
+  c.fill();
+  // Mini plate & amber turn indicators
+  rr(c, -0.22 * u, -1.62 * u, 0.44 * u, 0.24 * u, 0.03 * u, '#f8fafc');
+  c.fillStyle = '#ff9500';
+  c.fillRect(-0.36 * u, -1.85 * u, 0.14 * u, 0.06 * u);
+  c.fillRect(0.22 * u, -1.85 * u, 0.14 * u, 0.06 * u);
+
+  // Sharp Supersport Tail Fairing with Aero Cutouts
+  c.beginPath();
+  c.moveTo(-0.32 * u, -2.25 * u);
+  c.lineTo(0.32 * u, -2.25 * u);
+  c.lineTo(0.95 * u, -3.15 * u);
+  c.lineTo(0.62 * u, -3.45 * u);
+  c.lineTo(-0.62 * u, -3.45 * u);
+  c.lineTo(-0.95 * u, -3.15 * u);
+  c.closePath();
+  c.fillStyle = lg(c, -0.95 * u, 0, 0.95 * u, 0, [bike.m, '#ffffff44', bike.m, '#00000055']);
+  c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.22)';
+  c.lineWidth = 0.03 * u;
+  c.stroke();
+
+  // Dark Aero Vent Tunnels inside Tail Wings
+  c.fillStyle = '#090b10';
+  c.beginPath();
+  c.moveTo(-0.42 * u, -2.65 * u); c.lineTo(-0.74 * u, -3.1 * u); c.lineTo(-0.52 * u, -3.15 * u); c.closePath();
+  c.moveTo(0.42 * u, -2.65 * u); c.lineTo(0.74 * u, -3.1 * u); c.lineTo(0.52 * u, -3.15 * u); c.closePath();
+  c.fill();
+
+  // Center Spine & Racing Stripe
+  c.fillStyle = bike.a;
+  c.beginPath();
+  c.moveTo(-0.18 * u, -2.26 * u); c.lineTo(0.18 * u, -2.26 * u);
+  c.lineTo(0.26 * u, -3.42 * u); c.lineTo(-0.26 * u, -3.42 * u);
+  c.closePath(); c.fill();
+  c.fillStyle = bike.s;
+  c.fillRect(-0.04 * u, -3.4 * u, 0.08 * u, 1.12 * u);
+
+  // Signature V-Shaped LED Tail / Brake Light
+  c.save();
+  if (brake) {
+    c.shadowColor = '#ff1e27';
+    c.shadowBlur = u * 1.6;
+  }
+  c.strokeStyle = brake ? '#ff5555' : '#b91c1c';
+  c.lineWidth = 0.13 * u;
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(-0.56 * u, -2.68 * u);
+  c.lineTo(0, -2.36 * u);
+  c.lineTo(0.56 * u, -2.68 * u);
+  c.stroke();
+  if (brake) {
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 0.04 * u;
+    c.stroke();
+  }
+  c.restore();
+
+  // 5. WIDE FRONT FAIRING, CARBON WINGLETS & CLIP-ON BARS
+  // Side Fairing Belly & Aero Winglets
+  for (const sd of [-1, 1]) {
+    c.beginPath();
+    c.moveTo(sd * 0.65 * u, -3.2 * u);
+    c.lineTo(sd * 1.28 * u, -3.75 * u);
+    c.lineTo(sd * 1.15 * u, -4.45 * u);
+    c.lineTo(sd * 0.55 * u, -4.35 * u);
+    c.closePath();
+    c.fillStyle = lg(c, sd * 0.5 * u, 0, sd * 1.3 * u, 0, [bike.m, '#11141a']);
+    c.fill();
+
+    // Downforce MotoGP Carbon Winglet
+    c.fillStyle = '#12151c';
+    c.beginPath();
+    c.moveTo(sd * 1.12 * u, -3.95 * u);
+    c.lineTo(sd * 1.54 * u, -3.82 * u);
+    c.lineTo(sd * 1.48 * u, -3.68 * u);
+    c.lineTo(sd * 1.06 * u, -3.76 * u);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = bike.s;
+    c.lineWidth = 0.03 * u;
+    c.stroke();
+  }
+
+  // Sculpted Fuel Tank
+  c.beginPath();
+  c.moveTo(-0.72 * u, -3.42 * u);
+  c.quadraticCurveTo(-0.88 * u, -4.05 * u, -0.52 * u, -4.45 * u);
+  c.lineTo(0.52 * u, -4.45 * u);
+  c.quadraticCurveTo(0.88 * u, -4.05 * u, 0.72 * u, -3.42 * u);
+  c.closePath();
+  c.fillStyle = lg(c, -0.8 * u, 0, 0.8 * u, 0, [bike.m, '#ffffff55', bike.m]);
+  c.fill();
+
+  // Smoked Double-Bubble Windscreen & Mirrors
+  c.fillStyle = lg(c, 0, -5.05 * u, 0, -4.4 * u, ['rgba(120,210,255,0.45)', 'rgba(15,23,42,0.85)']);
+  c.beginPath();
+  c.moveTo(-0.62 * u, -4.45 * u);
+  c.quadraticCurveTo(0, -5.25 * u, 0.62 * u, -4.45 * u);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.4)';
+  c.lineWidth = 0.03 * u;
+  c.stroke();
+
+  // Mirrors
+  for (const sd of [-1, 1]) {
+    c.strokeStyle = '#181b20';
+    c.lineWidth = 0.08 * u;
+    c.beginPath();
+    c.moveTo(sd * 0.72 * u, -4.45 * u);
+    c.lineTo(sd * 1.25 * u, -4.85 * u);
+    c.stroke();
+    rr(c, sd > 0 ? 1.15 * u : -1.62 * u, -5.02 * u, 0.47 * u, 0.24 * u, 0.07 * u, '#11141a', '#475569', 0.025 * u);
+  }
+
+  // 6. DETAILED GP RIDER IN FULL LEATHER SUIT & AERO HELMET
+  // Rider Legs & Knee Sliders hugging the tank
+  for (const sd of [-1, 1]) {
+    c.fillStyle = bike.su;
+    c.beginPath();
+    c.moveTo(sd * 0.48 * u, -3.15 * u);
+    c.quadraticCurveTo(sd * 1.05 * u, -3.45 * u, sd * 0.92 * u, -3.95 * u);
+    c.lineTo(sd * 0.58 * u, -3.85 * u);
+    c.closePath();
+    c.fill();
+    // Colored Knee Puck Slider
+    rr(c, sd > 0 ? 0.86 * u : -1.04 * u, -3.72 * u, 0.18 * u, 0.28 * u, 0.06 * u, bike.s);
+    // Racing Boots on Rearsets
+    rr(c, sd > 0 ? 0.64 * u : -0.92 * u, -2.42 * u, 0.28 * u, 0.42 * u, 0.08 * u, '#111318', bike.m, 0.03 * u);
+  }
+
+  // Rider Torso & Aerodynamic Speed Hump
+  c.beginPath();
+  c.moveTo(-0.88 * u, -3.1 * u);
+  c.quadraticCurveTo(-1.05 * u, -4.15 * u, -0.68 * u, -4.65 * u);
+  c.lineTo(0.68 * u, -4.65 * u);
+  c.quadraticCurveTo(1.05 * u, -4.15 * u, 0.88 * u, -3.1 * u);
+  c.closePath();
+  c.fillStyle = lg(c, -1.0 * u, 0, 1.0 * u, 0, [bike.su, '#2a303c', bike.su]);
+  c.fill();
+
+  // Leather Suit Racing Stripes & Shoulder Armor Sliders
+  c.fillStyle = bike.m;
+  c.beginPath();
+  c.moveTo(-0.55 * u, -4.55 * u); c.lineTo(-0.22 * u, -3.3 * u);
+  c.lineTo(-0.38 * u, -3.3 * u); c.lineTo(-0.74 * u, -4.45 * u);
+  c.closePath(); c.fill();
+  c.beginPath();
+  c.moveTo(0.55 * u, -4.55 * u); c.lineTo(0.22 * u, -3.3 * u);
+  c.lineTo(0.38 * u, -3.3 * u); c.lineTo(0.74 * u, -4.45 * u);
+  c.closePath(); c.fill();
+
+  // Titanium Shoulder Caps
+  rr(c, -0.98 * u, -4.58 * u, 0.34 * u, 0.42 * u, 0.14 * u, '#cbd5e1');
+  rr(c, 0.64 * u, -4.58 * u, 0.34 * u, 0.42 * u, 0.14 * u, '#cbd5e1');
+
+  // Aero Spine Hump
+  c.beginPath();
+  c.moveTo(-0.28 * u, -4.52 * u);
+  c.lineTo(0.28 * u, -4.52 * u);
+  c.lineTo(0.18 * u, -3.45 * u);
+  c.lineTo(-0.18 * u, -3.45 * u);
+  c.closePath();
+  c.fillStyle = lg(c, -0.28 * u, 0, 0.28 * u, 0, [bike.a, '#ffffff44', bike.a]);
+  c.fill();
+  c.fillStyle = bike.s;
+  c.fillRect(-0.05 * u, -4.45 * u, 0.1 * u, 0.9 * u);
+
+  // Rider Arms & Gauntlet Gloves gripping clip-ons
+  c.lineCap = 'round';
+  for (const sd of [-1, 1]) {
+    c.strokeStyle = bike.su;
+    c.lineWidth = 0.48 * u;
+    c.beginPath();
+    c.moveTo(sd * 0.84 * u, -4.35 * u);
+    c.quadraticCurveTo(sd * 1.38 * u, -4.15 * u, sd * 1.42 * u, -3.72 * u);
+    c.stroke();
+    // Gauntlet Glove
+    rr(c, sd > 0 ? 1.25 * u : -1.62 * u, -3.9 * u, 0.37 * u, 0.34 * u, 0.12 * u, bike.m, '#111', 0.03 * u);
+  }
+
+  // Shoei / AGV Pista Aero Helmet with Rear Spoiler & Iridium Visor Edge
+  const hy = -5.12 * u;
+  c.fillStyle = lg(c, -0.68 * u, hy - 0.65 * u, 0.68 * u, hy + 0.55 * u, ['#ffffff', bike.a === '#111418' ? '#cbd5e1' : '#e2e8f0', '#64748b']);
+  c.beginPath();
+  c.arc(0, hy, 0.66 * u, 0, Math.PI * 2);
+  c.fill();
+
+  // Helmet Racing Graphics & Rear Aero Wing
+  c.fillStyle = bike.m;
+  c.beginPath();
+  c.moveTo(-0.18 * u, hy - 0.65 * u);
+  c.lineTo(0.18 * u, hy - 0.65 * u);
+  c.lineTo(0.28 * u, hy + 0.55 * u);
+  c.lineTo(-0.28 * u, hy + 0.55 * u);
+  c.closePath();
+  c.fill();
+  c.fillStyle = bike.s;
+  c.fillRect(-0.05 * u, hy - 0.65 * u, 0.1 * u, 1.2 * u);
+
+  // Clear polycarbonate helmet aero spoiler
+  c.fillStyle = 'rgba(200, 235, 255, 0.45)';
+  c.beginPath();
+  c.moveTo(-0.42 * u, hy - 0.15 * u);
+  c.lineTo(0.42 * u, hy - 0.15 * u);
+  c.lineTo(0.32 * u, hy + 0.25 * u);
+  c.lineTo(-0.32 * u, hy + 0.25 * u);
+  c.closePath();
+  c.fill();
+
+  // Specular helmet crown reflection
+  c.fillStyle = 'rgba(255,255,255,0.75)';
+  c.beginPath();
+  c.ellipse(-0.22 * u, hy - 0.34 * u, 0.14 * u, 0.24 * u, 0.35, 0, Math.PI * 2);
+  c.fill();
+
+  c.restore();
+}
+
+// ============================================================================
+// SIDE PROFILE SUPERBIKE RENDERER (FOR GARAGE SHOWCASE)
+// ============================================================================
+function drawSuperbikeProfile(c, cx, cy, scale, bike, spin) {
+  c.save();
+  c.translate(cx, cy);
+  c.scale(scale, scale);
+
+  const rimCol = bike.rimColor || '#eab308';
+  const tyreObj = bike.tyre || TYRES[1];
+
+  // Floor reflection shadow
+  const sh = c.createRadialGradient(0, 10, 20, 0, 10, 340);
+  sh.addColorStop(0, 'rgba(0,0,0,0.85)');
+  sh.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = sh;
+  c.beginPath(); c.ellipse(0, 10, 330, 26, 0, 0, 7); c.fill();
+
+  const drawWheel = (wx, wy, rad) => {
+    c.save();
+    c.translate(wx, wy);
+    // Tyre rubber
+    c.beginPath(); c.arc(0, 0, rad, 0, 7);
+    c.fillStyle = '#121418'; c.fill();
+    c.lineWidth = 14; c.strokeStyle = '#090a0d'; c.stroke();
+    // Compound stripe
+    c.beginPath(); c.arc(0, 0, rad - 8, 0, 7);
+    c.lineWidth = 2.5; c.strokeStyle = tyreObj.stripe; c.stroke();
+    // Rim outer lip
+    c.beginPath(); c.arc(0, 0, rad * 0.68, 0, 7);
+    c.lineWidth = 8; c.strokeStyle = rimCol; c.stroke();
+    // Inner dark hub
+    c.beginPath(); c.arc(0, 0, rad * 0.62, 0, 7);
+    c.fillStyle = '#0b0e14'; c.fill();
+    // Y-Spokes
+    c.save();
+    c.rotate(spin);
+    c.strokeStyle = rimCol;
+    c.lineWidth = 4.5;
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2;
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos(a - 0.16) * rad * 0.64, Math.sin(a - 0.16) * rad * 0.64);
+      c.moveTo(0, 0);
+      c.lineTo(Math.cos(a + 0.16) * rad * 0.64, Math.sin(a + 0.16) * rad * 0.64);
+      c.stroke();
+    }
+    // Brembo Floating Brake Rotor
+    c.beginPath(); c.arc(0, 0, rad * 0.48, 0, 7);
+    c.lineWidth = 9; c.strokeStyle = '#94a3b8'; c.stroke();
+    c.beginPath(); c.arc(0, 0, rad * 0.48, 0, 7);
+    c.lineWidth = 2; c.setLineDash([4, 6]); c.strokeStyle = '#1e293b'; c.stroke();
+    c.setLineDash([]);
+    c.restore();
+    // Radial Brake Caliper
+    rr(c, -rad * 0.56, -18, 22, 36, 6, '#dc2626', '#7f1d1d', 1.5);
+    // Axle nut
+    c.beginPath(); c.arc(0, 0, 12, 0, 7); c.fillStyle = '#cbd5e1'; c.fill();
+    c.restore();
+  };
+
+  // Rear & Front Wheels
+  drawWheel(-185, -78, 78);
+  drawWheel(195, -76, 76);
+
+  // Swingarm
+  c.fillStyle = lg(c, -185, -95, -40, -65, ['#334155', '#94a3b8', '#1e293b']);
+  c.beginPath();
+  c.moveTo(-185, -86); c.lineTo(-55, -108); c.lineTo(-45, -68); c.lineTo(-185, -68);
+  c.closePath(); c.fill();
+
+  // Öhlins Front Forks (Gold USD)
+  c.strokeStyle = '#eab308'; c.lineWidth = 13; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(195, -76); c.lineTo(132, -215); c.stroke();
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 9;
+  c.beginPath(); c.moveTo(195, -76); c.lineTo(166, -142); c.stroke();
+
+  // Engine Block & Headers
+  rr(c, -55, -155, 130, 88, 14, '#1e2430', '#334155', 2);
+  c.strokeStyle = '#f59e0b'; c.lineWidth = 8;
+  c.beginPath();
+  c.moveTo(75, -125); c.quadraticCurveTo(115, -85, 85, -48); c.lineTo(-40, -48);
+  c.stroke();
+
+  // Exhaust Canister
+  c.save();
+  c.translate(-80, -68);
+  c.rotate(-0.28);
+  rr(c, -85, -16, 115, 32, 10,
+    bike.pipe === 'carbon' ? '#18181b' : lg(c, 0, -16, 0, 16, ['#64748b', '#f1f5f9', '#475569']));
+  c.restore();
+
+  // Main Sculpted Fairing, Belly Pan & Tail
+  c.beginPath();
+  c.moveTo(-235, -185); // Tail tip
+  c.lineTo(-105, -145); // Rider seat
+  c.quadraticCurveTo(-35, -195, 55, -198); // Fuel tank top
+  c.lineTo(155, -185); // Nose upper
+  c.lineTo(222, -142); // Nose beak
+  c.lineTo(175, -92);  // Front fairing lower
+  c.lineTo(95, -42);   // Belly pan front
+  c.lineTo(-45, -42);  // Belly pan rear
+  c.lineTo(-75, -110); // Mid fairing
+  c.lineTo(-155, -135);
+  c.closePath();
+  c.fillStyle = lg(c, 0, -205, 0, -42, [bike.m, bike.m, '#0f172a']);
+  c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 2; c.stroke();
+
+  // Accent Livery Stripe & Shark Gill Vents
+  c.fillStyle = bike.a;
+  c.beginPath();
+  c.moveTo(-225, -180); c.lineTo(-100, -142); c.lineTo(-45, -168); c.lineTo(65, -172);
+  c.lineTo(185, -138); c.lineTo(150, -112); c.lineTo(40, -125); c.lineTo(-75, -112);
+  c.closePath(); c.fill();
+
+  c.fillStyle = bike.s;
+  c.beginPath();
+  c.moveTo(45, -155); c.lineTo(165, -135); c.lineTo(158, -126); c.lineTo(40, -145);
+  c.closePath(); c.fill();
+
+  // Downforce Winglet
+  c.fillStyle = '#090b10';
+  c.beginPath();
+  c.moveTo(145, -142); c.lineTo(205, -132); c.lineTo(192, -120); c.lineTo(138, -130);
+  c.closePath(); c.fill();
+
+  // Windscreen & Headlight DRL
+  c.fillStyle = 'rgba(125, 211, 252, 0.45)';
+  c.beginPath();
+  c.moveTo(115, -192); c.quadraticCurveTo(155, -225, 185, -175); c.lineTo(148, -184);
+  c.closePath(); c.fill();
+
+  c.fillStyle = '#00e5ff';
+  c.shadowColor = '#00e5ff'; c.shadowBlur = 14;
+  c.beginPath();
+  c.moveTo(195, -146); c.lineTo(220, -141); c.lineTo(206, -133);
+  c.closePath(); c.fill();
+  c.shadowBlur = 0;
+
+  // Rider Seat & Tail Light
+  c.fillStyle = '#111318';
+  c.beginPath();
+  c.moveTo(-112, -146); c.quadraticCurveTo(-72, -135, -35, -165); c.lineTo(-42, -140); c.lineTo(-108, -135);
+  c.closePath(); c.fill();
+
+  c.fillStyle = '#ff2a4b';
+  c.fillRect(-236, -184, 14, 7);
+
+  c.restore();
+}
+
+// ============================================================================
+// GARAGE & HOME MENU UI LOGIC
+// ============================================================================
+function updateGarageUI() {
+  const b = getActiveBike();
+  document.getElementById('g-badge').textContent = b.badge;
+  document.getElementById('g-title').textContent = b.name;
+  document.getElementById('g-desc').textContent = b.desc;
+  document.getElementById('bike-idx').textContent = `0${S.bike + 1} / 0${BIKES.length}`;
+
+  document.getElementById('sp-top').innerHTML = `${b.effTop} <small>KM/H</small>`;
+  document.getElementById('bar-top').style.width = `${Math.min(100, (b.effTop / 400) * 100)}%`;
+
+  document.getElementById('sp-acc').innerHTML = `${b.z100} <small>0-100s</small>`;
+  document.getElementById('bar-acc').style.width = `${b.ac * 100}%`;
+
+  const hndScore = Math.round(b.effGrip * 82);
+  document.getElementById('sp-hnd').innerHTML = `${hndScore} <small>PTS</small>`;
+  document.getElementById('bar-hnd').style.width = `${Math.min(100, hndScore)}%`;
+
+  document.getElementById('sp-pwr').innerHTML = `${b.hp} <small>HP</small>`;
+  document.getElementById('bar-pwr').style.width = `${Math.min(100, (b.hp / 320) * 100)}%`;
+
+  document.getElementById('paint-name').textContent = PAINTS[S.paint].name;
+  document.getElementById('rim-name').textContent = RIMS[S.rim].name;
+}
+
+function initMenuUI() {
+  // Bike List
+  const bl = document.getElementById('bike-list');
+  BIKES.forEach((bk, idx) => {
+    const el = document.createElement('div');
+    el.className = 'bike-item' + (idx === S.bike ? ' sel' : '');
+    el.innerHTML = `
+      <div class="bike-item-top">
+        <span class="bike-item-name">${bk.name}</span>
+        <span class="bike-item-spd">${bk.top} KM/H</span>
+      </div>
+      <div class="bike-item-class">${bk.badge}</div>
+    `;
+    el.onclick = () => {
+      S.bike = idx;
+      applyBikeConfig();
+      reset();
+      document.querySelectorAll('.bike-item').forEach((x, i) => x.classList.toggle('sel', i === idx));
+      updateGarageUI();
+    };
+    bl.appendChild(el);
+  });
+
+  // Paint Swatches
+  const ps = document.getElementById('paint-swatches');
+  PAINTS.forEach((pt, idx) => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (idx === S.paint ? ' sel' : '');
+    sw.style.background = idx === 0
+      ? 'conic-gradient(#28d828, #1c52e8, #e01b24, #f59e0b, #28d828)'
+      : `linear-gradient(135deg, ${pt.m} 50%, ${pt.s} 50%)`;
+    sw.title = pt.name;
+    sw.onclick = () => {
+      S.paint = idx;
+      applyBikeConfig();
+      document.querySelectorAll('#paint-swatches .swatch').forEach((x, i) => x.classList.toggle('sel', i === idx));
+      updateGarageUI();
+    };
+    ps.appendChild(sw);
+  });
+
+  // Rim Swatches
+  const rsEl = document.getElementById('rim-swatches');
+  RIMS.forEach((rm, idx) => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (idx === S.rim ? ' sel' : '');
+    sw.style.background = rm.c;
+    sw.title = rm.name;
+    sw.onclick = () => {
+      S.rim = idx;
+      applyBikeConfig();
+      document.querySelectorAll('#rim-swatches .swatch').forEach((x, i) => x.classList.toggle('sel', i === idx));
+      updateGarageUI();
+    };
+    rsEl.appendChild(sw);
+  });
+
+  // Tyre Pills
+  const tp = document.getElementById('tyre-pills');
+  TYRES.forEach((ty, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-btn' + (idx === S.tyre ? ' sel' : '');
+    btn.textContent = ty.name;
+    btn.onclick = () => {
+      S.tyre = idx;
+      applyBikeConfig();
+      document.querySelectorAll('#tyre-pills .pill-btn').forEach((x, i) => x.classList.toggle('sel', i === idx));
+      updateGarageUI();
+    };
+    tp.appendChild(btn);
+  });
+
+  // Settings Grid
+  const sg = document.getElementById('settings-grid');
+  OP.forEach(([k, lbl, vals]) => {
+    const box = document.createElement('div');
+    box.className = 'set-box';
+    box.innerHTML = `<label>${lbl}</label><div class="seg-btns"></div>`;
+    const row = box.querySelector('.seg-btns');
+    vals.forEach((vTxt, idx) => {
+      const b = document.createElement('button');
+      b.textContent = vTxt;
+      if (S[k] === idx) b.className = 'on';
+      b.onclick = () => {
+        S[k] = idx;
+        row.querySelectorAll('button').forEach((x, i) => x.className = i === idx ? 'on' : '');
+        if (k === 'traf') spawn();
+        if (k === 'q') rs();
+        if (k === 'mus' && mg) mg.gain.value = idx ? 0 : 0.28;
+      };
+      row.appendChild(b);
+    });
+    sg.appendChild(box);
+  });
+
+  // Tab switching
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const isG = tab.dataset.tab === 'garage';
+      document.getElementById('tab-garage').style.display = isG ? 'flex' : 'none';
+      document.getElementById('tab-race').style.display = isG ? 'none' : 'flex';
+    };
+  });
+
+  // Garage View Toggle
+  document.getElementById('v-rear').onclick = () => {
+    S.garageView = 0;
+    document.getElementById('v-rear').classList.add('on');
+    document.getElementById('v-side').classList.remove('on');
+  };
+  document.getElementById('v-side').onclick = () => {
+    S.garageView = 1;
+    document.getElementById('v-side').classList.add('on');
+    document.getElementById('v-rear').classList.remove('on');
+  };
+
+  updateGarageUI();
+}
+initMenuUI();
+
+function renderGarageShowcase(timeSec) {
+  if (document.getElementById('menu-overlay').style.display === 'none') return;
+  const w = gcv.width, h = gcv.height;
+  gg.clearRect(0, 0, w, h);
+
+  // Showroom Spotlight & Architectural Grid Floor
+  const spot = gg.createRadialGradient(w * 0.5, h * 0.42, 20, w * 0.5, h * 0.52, w * 0.55);
+  spot.addColorStop(0, 'rgba(0, 229, 255, 0.16)');
+  spot.addColorStop(0.55, 'rgba(20, 32, 60, 0.25)');
+  spot.addColorStop(1, 'rgba(5, 8, 18, 0)');
+  gg.fillStyle = spot;
+  gg.fillRect(0, 0, w, h);
+
+  // Showroom Floor Platform
+  const floorY = h * 0.78;
+  const flGrad = gg.createLinearGradient(0, floorY - 40, 0, h);
+  flGrad.addColorStop(0, '#10182b');
+  flGrad.addColorStop(1, '#050811');
+  gg.fillStyle = flGrad;
+  gg.fillRect(0, floorY - 25, w, h - floorY + 25);
+
+  // Glowing Neon Turntable Ring
+  gg.save();
+  gg.translate(w * 0.5, floorY + 12);
+  gg.scale(1, 0.22);
+  gg.beginPath();
+  gg.arc(0, 0, 260, 0, Math.PI * 2);
+  gg.strokeStyle = 'rgba(0, 229, 255, 0.45)';
+  gg.lineWidth = 6;
+  gg.shadowColor = '#00e5ff';
+  gg.shadowBlur = 24;
+  gg.stroke();
+  gg.beginPath();
+  gg.arc(0, 0, 215, 0, Math.PI * 2);
+  gg.strokeStyle = 'rgba(255, 42, 95, 0.35)';
+  gg.lineWidth = 3;
+  gg.stroke();
+  gg.restore();
+
+  // Draw Active Customized Superbike
+  const activeBike = getActiveBike();
+  if (S.garageView === 0) {
+    gg.save();
+    gg.translate(w * 0.5, floorY + 12);
+    const gentleLean = Math.sin(timeSec * 1.4) * 0.06;
+    drawSuperbikeRear(gg, 66, activeBike, gentleLean, Math.sin(timeSec * 2.2) > 0.65, timeSec * 1.2);
+    gg.restore();
+  } else {
+    drawSuperbikeProfile(gg, w * 0.5, floorY + 8, 1.25, activeBike, timeSec * 1.5);
+  }
+}
+
+const ov = document.getElementById('menu-overlay');
+function openMenu() {
+  go = false;
+  ov.style.display = 'flex';
+  document.getElementById('death-overlay').style.display = 'none';
+  I.gas = I.brk = I.l = I.r = 0;
+}
+function startGame() {
+  initAudio();
+  if (AC && AC.state === 'suspended') AC.resume();
+  if (mg) mg.gain.value = S.mus ? 0 : 0.28;
+  applyBikeConfig();
+  if (dead) reset();
+  go = true;
+  ov.style.display = 'none';
+}
+
+document.getElementById('go').onclick = startGame;
+document.getElementById('mn').addEventListener('pointerdown', openMenu);
+document.getElementById('btn-retry').onclick = () => { reset(); go = true; };
+document.getElementById('btn-to-garage').onclick = openMenu;
+
+// ---- Input Handling ----
+const KM = {
+  ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r',
+  ArrowUp: 'gas', KeyW: 'gas', ArrowDown: 'brk', KeyS: 'brk',
+  Space: 'brk', KeyN: 'nos', ShiftLeft: 'nos'
+};
+addEventListener('keydown', e => {
+  const k = KM[e.code];
+  if (k) { I[k] = 1; e.preventDefault(); return; }
+  if (e.repeat) return;
+  if (e.code === 'KeyE' || e.code === 'KeyX') shift(1);
+  else if (e.code === 'KeyQ' || e.code === 'KeyZ') shift(-1);
+  else if (e.code === 'KeyH') horn(true);
+  else if (e.code === 'KeyM') { S.mus ^= 1; if (mg) mg.gain.value = S.mus ? 0 : 0.28; }
+  else if (e.code === 'KeyR') { reset(); if (!go && ov.style.display === 'none') go = true; }
+  else if (e.code === 'KeyC') cam ^= 1;
+  else if (e.code === 'Escape') openMenu();
+});
+addEventListener('keyup', e => {
+  const k = KM[e.code];
+  if (k) I[k] = 0;
+  if (e.code === 'KeyH') horn(false);
+});
+document.querySelectorAll('[data-k]').forEach(el => {
+  const k = el.dataset.k;
+  const dn = e => {
+    e.preventDefault(); el.classList.add('on');
+    if (k === 'gu') shift(1);
+    else if (k === 'gd') shift(-1);
+    else if (k === 'hn') horn(true);
+    else if (k === 'cam') cam ^= 1;
+    else I[k] = 1;
+  };
+  const up = () => {
+    el.classList.remove('on');
+    if (k === 'hn') horn(false);
+    else if (k !== 'gu' && k !== 'gd') I[k] = 0;
+  };
+  el.addEventListener('pointerdown', dn);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => el.addEventListener(n, up));
+});
+
+// ============================================================================
+// PHYSICS & COLLISION / DAMAGE SYSTEM
+// ============================================================================
+function upd(dt) {
+  // Update blood drips
+  for (const b of bloodSplatters) {
+    if (b.drip < 45) b.drip += dt * 14;
+  }
+  // Update crash sparks
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const sp = sparks[i];
+    sp.x += sp.vx * dt;
+    sp.y += sp.vy * dt;
+    sp.vy += 980 * dt;
+    sp.life -= dt;
+    if (sp.life <= 0) sparks.splice(i, 1);
+  }
+
+  if (dead) {
+    deathT += dt;
+    v = Math.max(0, v - 85 * dt);
+    pos = (pos + v * U * dt) % TL;
+    bikeSpin += dt * 9.5;
+    bikeFlyX += dt * 160;
+    bikeFlyY += bikeVy * dt;
+    bikeVy += 1250 * dt;
+    if (bikeFlyY > 0) {
+      bikeFlyY = 0;
+      bikeVy = -Math.abs(bikeVy) * 0.35;
+    }
+    shake = Math.max(0, shake - dt * 1.4);
+    flash = Math.max(0, flash - dt * 1.5);
+    return;
+  }
+
+  T += dt;
+  const r = v / GM[gear], rr = Math.min(r, 1);
+  clutch = Math.max(0, clutch - dt);
+  let a = 0;
+
+  if (I.gas && clutch <= 0 && r < 0.985) {
+    const re = (gear === 1 && v < 30) ? Math.max(rr, 0.25) : rr;
+    let q = 0.62 + 0.38 * Math.sin(Math.PI * (0.15 + 0.85 * re));
+    if (gear > 1 && r < 0.14) q *= 0.3 + r * 4;
+    a += q * RT[gear] * B.P;
+  }
+  if (I.nos && nos > 0 && I.gas && r < 1) {
+    a += 17;
+    nos = Math.max(0, nos - dt * 0.2);
+  } else {
+    nos = Math.min(1, nos + dt * 0.045);
+  }
+  if (r > 1.02) a -= (r - 1) * 60;
+  if (!I.gas) a -= 1.2 + rr * 4.5;
+  if (I.brk) a -= 42;
+
+  a -= kd * v * v + 1;
+  const si = Math.floor((pos + PZ) / SL) % N;
+  a -= ((segs[(si + 1) % N].y - segs[si].y) / SL) * 90;
+
+  const off = Math.abs(px) > 1.06;
+  if (off) {
+    a -= 28 + v * 0.15;
+    shake = Math.max(shake, Math.min(0.45, v / 300));
+  }
+
+  v = Math.max(0, v + a * dt);
+  const sp = v / 260, bs = segs[si];
+
+  steer += ((I.r - I.l) - steer) * Math.min(1, dt * 7.5);
+  px += steer * dt * 3.2 * B.effGrip * Math.min(1, v / 40) * (1.15 - 0.5 * Math.min(1, v / 300));
+  px -= bs.curve * sp * sp * dt * 0.3;
+  px = Math.max(-1.16, Math.min(1.16, px));
+
+  lean += ((steer * 0.34 + bs.curve * sp * sp * 0.04) - lean) * Math.min(1, dt * 6.5);
+
+  let tg = 1200 + Math.min(1, rr) * 9800;
+  if (v < 25 && gear === 1) tg = Math.max(tg, 1200 + I.gas * 5500);
+  if (clutch > 0 && I.gas) tg = Math.max(tg, rpm);
+  rpm += (tg - rpm) * Math.min(1, dt * (clutch > 0 ? 14 : 9));
+
+  pos = (pos + v * U * dt) % TL;
+  dist += v * U * dt;
+  if (v > topV) topV = v;
+
+  const pz = pos + PZ;
+  crashCD = Math.max(0, crashCD - dt);
+  shake = Math.max(0, shake - dt * 2);
+  flash = Math.max(0, flash - dt * 2);
+
+  for (const c of cars) {
+    let best = 1600, tgt = c.b;
+    for (const o of cars) {
+      if (o === c || o.x !== c.x) continue;
+      const gp = ((o.z - c.z) % TL + TL) % TL;
+      if (gp < best) { best = gp; tgt = Math.min(c.b, o.s * 0.98); }
+    }
+    c.s += (tgt - c.s) * Math.min(1, dt * 2);
+    c.z = (c.z + c.s * U * dt) % TL;
+
+    let d = ((c.z - pz) % TL + TL) % TL;
+    if (d > TL / 2) d -= TL;
+    const ahead = d > 0;
+    if (c.ah && !ahead && d > -1500 && v > c.s) passed++;
+    c.ah = ahead;
+
+    if (!crashCD && d > -115 && d < 225 && Math.abs(px - c.x) < (c.t ? 0.36 : 0.28)) {
+      const relSpeed = Math.abs(v - c.s);
+      if (v >= 135 || relSpeed >= 95) {
+        // High-speed fatal crash -> Death Animation!
+        triggerDeath(v);
+        return;
+      } else {
+        // Low-speed crash -> Screen Cracks, Blood Splatter & Hull Damage
+        const dmg = Math.max(22, Math.round(relSpeed * 0.65));
+        hp = Math.max(0, hp - dmg);
+        const sev = Math.min(1, Math.max(0.35, relSpeed / 95));
+        addDamageEffects(sev);
+
+        if (hp <= 0) {
+          triggerDeath(v);
+          return;
+        }
+
+        v = Math.min(v, c.s * 0.55);
+        shake = 1.0;
+        flash = 0.95;
+        crashCD = 1.0;
+        msg(`IMPACT! -${dmg}% INTEGRITY`);
+        px += px < c.x ? -0.22 : 0.22;
+        if (AC) nz(AC.currentTime, 0.45, 0.85, 250, MS);
+      }
+    }
+  }
+}
+
+// ============================================================================
+// WORLD, TRAFFIC, COCKPIT (CLEAR ROAD VIEW + CRISP SPEEDOMETER) & EFFECTS
+// ============================================================================
+const lights = [];
+function pl(x1, y1, w1, x2, y2, w2, c) {
+  g.fillStyle = c;
+  g.beginPath();
+  g.moveTo(x1 - w1, y1 + 0.7);
+  g.lineTo(x1 + w1, y1 + 0.7);
+  g.lineTo(x2 + w2, y2);
+  g.lineTo(x2 - w2, y2);
+  g.closePath();
+  g.fill();
+}
+function st(p, q, a, b, c) { pl(p.x + p.w * a, p.y, p.w * b, q.x + q.w * a, q.y, q.w * b, c); }
+function pr(wy, cz, xo) {
+  const sc = CD / cz;
+  return { x: W / 2 + sc * (xo - cx0) * Kx, y: hY - sc * (wy - camY) * K, w: sc * RW * Kx };
+}
+function mount(off, amp, col, sc) {
+  g.fillStyle = col;
+  g.beginPath();
+  g.moveTo(0, hY + 2);
+  for (let x = 0; x <= W; x += 6) {
+    const t = (x + off) * sc;
+    g.lineTo(x, hY - amp * (0.5 * Math.sin(t) + 0.3 * Math.sin(t * 2.3 + 1) + 0.15 * Math.sin(t * 5.1 + 2) + 0.05 * Math.sin(t * 13) + 0.7));
+  }
+  g.lineTo(W, hY + 2);
+  g.fill();
+}
+function tree(x, y, s, k) {
+  g.fillStyle = 'rgba(0,0,0,0.25)';
+  g.beginPath(); g.ellipse(x, y, s * 0.4, s * 0.07, 0, 0, 7); g.fill();
+  g.fillStyle = '#4a3326'; g.fillRect(x - s * 0.05, y - s * 0.5, s * 0.1, s * 0.5);
+  const c = [['#1b5a2e', '#2f8f46', '#4bb35f'], ['#23642f', '#3a9a3c', '#6bc15a']][k];
+  g.fillStyle = c[0]; g.beginPath();
+  g.arc(x, y - s * 0.8, s * 0.45, 0, 7);
+  g.arc(x - s * 0.28, y - s * 0.58, s * 0.32, 0, 7);
+  g.arc(x + s * 0.28, y - s * 0.58, s * 0.32, 0, 7);
+  g.fill();
+  g.fillStyle = c[1]; g.beginPath();
+  g.arc(x - s * 0.06, y - s * 0.86, s * 0.34, 0, 7);
+  g.arc(x - s * 0.25, y - s * 0.62, s * 0.22, 0, 7);
+  g.fill();
+  g.fillStyle = c[2]; g.beginPath(); g.arc(x - s * 0.14, y - s * 0.94, s * 0.17, 0, 7); g.fill();
+}
+
+const R_ = (x, y, w, h, r, f) => { g.fillStyle = f; g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); };
+const gl = (x, y, w, h, r) => R_(x, y, w, h, r, lg(g, 0, y, 0, y + h, ['rgba(255,255,255,0.5)', 'rgba(255,255,255,0.04)', 'rgba(0,0,0,0.45)']));
+
+function carS2(x, y, w, c) {
+  const cw = w * (c.t ? 0.5 : 0.4), col = c.c, amb = col === '#ecf0f1', taxi = col === '#f1c40f', spt = col === '#e63946', fl = Math.floor(T * 6) % 2;
+  g.save(); g.translate(x, y); g.scale(1, 0.14);
+  let q = g.createRadialGradient(0, 0, 0, 0, 0, cw * 0.8);
+  q.addColorStop(0, 'rgba(0,0,0,0.7)'); q.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = q; g.beginPath(); g.arc(0, 0, cw * 0.8, 0, 7); g.fill(); g.restore();
+
+  R_(x - cw * 0.5, y - cw * 0.3, cw * 0.17, cw * 0.3, cw * 0.04, '#0b0b0d');
+  R_(x + cw * 0.33, y - cw * 0.3, cw * 0.17, cw * 0.3, cw * 0.04, '#0b0b0d');
+  const tl = (xc, yc) => {
+    R_(xc - cw * 0.1, yc, cw * 0.2, cw * 0.1, cw * 0.03, '#c8141a');
+    R_(xc - cw * 0.06, yc + cw * 0.02, cw * 0.12, cw * 0.05, 2, '#ff6a55');
+    lights.push([xc, yc + cw * 0.05, cw * 0.55, '255,40,30']);
+  };
+  if (c.t || amb) {
+    const h = cw * (amb ? 1.05 : 1.2);
+    R_(x - cw / 2, y - h, cw, h - cw * 0.2, cw * 0.04, lg(g, x - cw / 2, 0, x + cw / 2, 0, amb ? ['#cfd3da', '#fff', '#d5d9df'] : ['#8d949e', '#eef1f5', '#a9b0b9']));
+    if (amb) {
+      R_(x - cw / 2, y - h * 0.6, cw, h * 0.1, 0, '#d6252d');
+      R_(x - cw * 0.4, y - h * 0.92, cw * 0.35, cw * 0.2, 3, '#1a2230');
+      R_(x + cw * 0.05, y - h * 0.92, cw * 0.35, cw * 0.2, 3, '#1a2230');
+      g.fillStyle = '#2a63d8';
+      g.fillRect(x - cw * 0.03, y - h * 0.5, cw * 0.06, cw * 0.2);
+      g.fillRect(x - cw * 0.1, y - h * 0.42, cw * 0.2, cw * 0.06);
+      g.fillStyle = fl ? '#ff3030' : '#4a6bff'; g.fillRect(x - cw * 0.4, y - h - cw * 0.06, cw * 0.4, cw * 0.07);
+      g.fillStyle = fl ? '#4a6bff' : '#ff3030'; g.fillRect(x, y - h - cw * 0.06, cw * 0.4, cw * 0.07);
+      lights.push([x, y - h, cw * 1.1, fl ? '255,40,40' : '60,100,255']);
+      if (cw > 60) {
+        g.fillStyle = '#2a63d8'; g.font = '700 ' + cw * 0.09 + 'px system-ui';
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AMBULANCE', x, y - h * 0.3);
+      }
+    } else {
+      R_(x - cw / 2, y - h * 0.7, cw, h * 0.1, 0, col);
+      g.fillStyle = 'rgba(0,0,0,0.28)'; g.fillRect(x - 1, y - h, 2, h * 0.8);
+    }
+    tl(x - cw * 0.4, y - cw * 0.42); tl(x + cw * 0.4, y - cw * 0.42);
+  } else {
+    const by = y - cw * 0.5;
+    R_(x - cw / 2, by, cw, cw * 0.36, cw * 0.08, col);
+    gl(x - cw / 2, by, cw, cw * 0.36, cw * 0.08);
+    g.fillStyle = col; g.beginPath();
+    g.moveTo(x - cw * 0.42, by + cw * 0.03);
+    g.quadraticCurveTo(x - cw * 0.38, by - cw * 0.3, x - cw * 0.25, by - cw * 0.3);
+    g.lineTo(x + cw * 0.25, by - cw * 0.3);
+    g.quadraticCurveTo(x + cw * 0.38, by - cw * 0.3, x + cw * 0.42, by + cw * 0.03);
+    g.fill();
+    g.fillStyle = lg(g, 0, by - cw * 0.28, 0, by, ['#52698c', '#0a1019']);
+    g.beginPath();
+    g.moveTo(x - cw * 0.35, by);
+    g.quadraticCurveTo(x - cw * 0.32, by - cw * 0.25, x - cw * 0.22, by - cw * 0.25);
+    g.lineTo(x + cw * 0.22, by - cw * 0.25);
+    g.quadraticCurveTo(x + cw * 0.32, by - cw * 0.25, x + cw * 0.35, by);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.2)'; g.beginPath();
+    g.moveTo(x - cw * 0.25, by); g.lineTo(x - cw * 0.12, by - cw * 0.25);
+    g.lineTo(x, by - cw * 0.25); g.lineTo(x - cw * 0.13, by); g.fill();
+    if (spt) {
+      R_(x - cw * 0.5, by - cw * 0.1, cw, cw * 0.05, 2, '#111');
+      R_(x - cw * 0.5, by - cw * 0.17, cw * 0.04, cw * 0.12, 1, '#111');
+      R_(x + cw * 0.46, by - cw * 0.17, cw * 0.04, cw * 0.12, 1, '#111');
+      g.fillStyle = '#ff4a3a'; g.fillRect(x - cw * 0.3, by + cw * 0.1, cw * 0.6, cw * 0.025);
+    }
+    if (taxi) {
+      R_(x - cw * 0.11, by - cw * 0.38, cw * 0.22, cw * 0.09, 2, '#fff');
+      if (cw > 50) {
+        g.fillStyle = '#111'; g.font = '700 ' + cw * 0.06 + 'px system-ui';
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TAXI', x, by - cw * 0.335);
+      }
+    }
+    R_(x - cw * 0.11, by + cw * 0.22, cw * 0.22, cw * 0.08, 2, '#f2f2ee');
+    tl(x - cw * 0.38, by + cw * 0.06); tl(x + cw * 0.38, by + cw * 0.06);
+    g.fillStyle = '#d6dae0'; g.beginPath();
+    g.arc(x - cw * 0.3, y - cw * 0.15, cw * 0.03, 0, 7);
+    g.arc(x + cw * 0.3, y - cw * 0.15, cw * 0.03, 0, 7);
+    g.fill();
+  }
+  R_(x - cw * 0.5, y - cw * 0.2, cw, cw * 0.07, cw * 0.03, '#1d1f24');
+}
+
+function bld(x, y, w, h, sd) {
+  const bw = w * (2.2 + h * 1.6), bh = w * K / Kx * (2.2 + h * 5.5), x0 = sd < 0 ? x - bw : x, lit = S.time > 0, hu = 10 + h * 30 | 0;
+  g.fillStyle = lg(g, x0, 0, x0 + bw, 0, ['hsl(' + hu + ',' + (25 + h * 20 | 0) + '%,' + (34 + h * 14 | 0) + '%)', 'hsl(' + hu + ',22%,' + (24 + h * 10 | 0) + '%)']);
+  g.fillRect(x0, y - bh, bw, bh);
+  if (bw < 26) return;
+  const cs = Math.max(2, Math.min(8, bw / (w * 0.35) | 0)), rw = Math.max(3, Math.min(12, bh / (w * 0.3) | 0)), cd = bw / cs, rh = bh * 0.8 / rw;
+  for (let r = 0; r < rw; r++) {
+    for (let c = 0; c < cs; c++) {
+      const on = hs(h * 977 + r * 13 + c * 7) > 0.4;
+      g.fillStyle = lit ? (on ? '#ffd88a' : '#1b2230') : '#8db0d0';
+      g.fillRect(x0 + c * cd + cd * 0.18, y - bh + bh * 0.07 + r * rh, cd * 0.6, rh * 0.55);
+    }
+  }
+  g.fillStyle = lit ? '#ffb55a' : '#6a7684';
+  g.fillRect(x0, y - bh * 0.1, bw, bh * 0.1);
+}
+
+function mir(cx, cy) {
+  g.save();
+  g.translate(cx, cy);
+  const pth = () => {
+    g.beginPath();
+    g.moveTo(-64, 0); g.lineTo(-36, -38); g.lineTo(42, -40);
+    g.lineTo(66, -4); g.lineTo(44, 38); g.lineTo(-32, 36);
+    g.closePath();
+  };
+  pth(); g.fillStyle = '#0e1014'; g.fill();
+  g.save(); g.scale(0.88, 0.88); pth(); g.clip();
+  const P = PAL[S.time], gd = g.createLinearGradient(0, -40, 0, 40);
+  gd.addColorStop(0, P.sk[1]); gd.addColorStop(0.48, P.sk[2]);
+  gd.addColorStop(0.5, '#3a3d44'); gd.addColorStop(1, '#25272c');
+  g.fillStyle = gd; g.fillRect(-75, -50, 150, 100);
+  g.strokeStyle = 'rgba(255,255,255,0.45)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(-px * 6, 0); g.lineTo(-55, 40); g.moveTo(-px * 6, 0); g.lineTo(55, 40); g.stroke();
+  for (const c of cars) {
+    let d = ((c.z - (pos + PZ)) % TL + TL) % TL;
+    if (d > TL / 2) d -= TL;
+    if (d < -300 && d > -14000) {
+      const k = -d / 1000, sc = 1 / (1 + k * 0.6), X = (c.x - px) * 45 * sc, Y = 2 + 28 * sc, wd = 20 * sc * (c.t ? 1.3 : 1);
+      g.fillStyle = c.c; g.fillRect(X - wd / 2, Y - wd * 0.55, wd, wd * 0.55);
+      g.fillStyle = '#fff'; g.fillRect(X - wd * 0.42, Y - wd * 0.3, wd * 0.2, wd * 0.12); g.fillRect(X + wd * 0.22, Y - wd * 0.3, wd * 0.2, wd * 0.12);
+    }
+  }
+  g.restore();
+  g.strokeStyle = '#050608'; g.lineWidth = 5; pth(); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,0.22)'; g.lineWidth = 1.5; g.stroke();
+  g.restore();
+}
+
+// ============================================================================
+// FIRST-PERSON COCKPIT: LOW-PROFILE CLEAR ROAD VIEW + HIGH-CONTRAST TFT DASH
+// ============================================================================
+function cockpit() {
+  const s = Math.min(W / 1050, H / 640);
+  const m = B.m, g2 = (x0, y0, x1, y1, st) => lg(g, x0, y0, x1, y1, st);
+  g.save();
+  // Positioned lower so the horizon and traffic lanes stay 100% unobstructed!
+  g.translate(W / 2, H + 34 * s);
+  g.scale(s, s);
+  g.rotate(lean * 0.26);
+
+  // Ultra-clear tinted racing windscreen (crystal clear upper visibility)
+  g.fillStyle = 'rgba(14, 24, 36, 0.14)';
+  g.beginPath();
+  g.moveTo(-210, -210);
+  g.bezierCurveTo(-185, -315, -85, -365, 0, -370);
+  g.bezierCurveTo(85, -365, 185, -315, 210, -210);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(255, 255, 255, 0.26)';
+  g.lineWidth = 2.5;
+  g.stroke();
+
+  // Wide-set bar-end / fairing mirrors tucked to the outer edges
+  g.lineCap = 'round';
+  for (const sd of [-1, 1]) {
+    g.strokeStyle = '#14171c'; g.lineWidth = 10;
+    g.beginPath(); g.moveTo(sd * 320, -205); g.lineTo(sd * 425, -315); g.stroke();
+    mir(sd * 455, -345);
+  }
+
+  // Sculpted Upper Fairing Cowl
+  g.beginPath();
+  g.moveTo(-390, 0);
+  g.bezierCurveTo(-350, -85, -255, -145, -185, -172);
+  g.lineTo(185, -172);
+  g.bezierCurveTo(255, -145, 350, -85, 390, 0);
+  g.closePath();
+  g.fillStyle = m; g.fill();
+  g.fillStyle = g2(0, -175, 0, 0, ['rgba(255,255,255,0.42)', 'rgba(255,255,255,0.04)', 'rgba(0,0,0,0.55)']);
+  g.fill();
+
+  // Carbon Fiber Triple Clamp & Steering Damper
+  R_(-150, -145, 300, 32, 10, g2(0, -145, 0, -113, ['#64748b', '#1e293b']));
+  g.fillStyle = '#eab308';
+  g.beginPath(); g.arc(0, -128, 16, 0, 7); g.fill();
+  g.fillStyle = '#0f172a';
+  g.beginPath(); g.arc(0, -128, 8, 0, 7); g.fill();
+
+  // Clip-on Handlebars & Racing Switchgear
+  g.strokeStyle = g2(0, -165, 0, -120, ['#e2e8f0', '#64748b', '#1e293b']);
+  g.lineWidth = 20;
+  g.beginPath();
+  g.moveTo(-410, -155); g.lineTo(-105, -175);
+  g.lineTo(105, -175); g.lineTo(410, -155);
+  g.stroke();
+
+  for (const sd of [-1, 1]) {
+    R_(sd * 295 - 32, -205, 64, 44, 8, g2(0, -205, 0, -161, ['#272b33', '#111317']));
+    g.fillStyle = '#22c55e'; g.beginPath(); g.arc(sd * 295 - 10, -188, 4.5, 0, 7); g.fill();
+    g.fillStyle = '#f97316'; g.beginPath(); g.arc(sd * 295 + 10, -188, 4.5, 0, 7); g.fill();
+    // Racing Gauntlet Gloves on Grips
+    g.save();
+    g.translate(sd * 405, -148);
+    R_(-58, -36, 116, 72, 32, g2(0, -36, 0, 36, [m, '#111318']));
+    g.strokeStyle = B.s; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(-25, -34); g.lineTo(-25, 34); g.stroke();
+    g.restore();
+  }
+
+  // ==========================================================================
+  // HIGH-VISIBILITY FULL-COLOR TFT SUPERBIKE INSTRUMENT CLUSTER
+  // ==========================================================================
+  // Carbon Instrument Housing
+  R_(-205, -295, 410, 148, 22, g2(0, -295, 0, -147, ['#262b36', '#0d1017']));
+  g.strokeStyle = 'rgba(255, 255, 255, 0.25)'; g.lineWidth = 2.5;
+  g.beginPath(); g.roundRect(-205, -295, 410, 148, 22); g.stroke();
+
+  // Inner Anti-Glare OLED Screen
+  R_(-192, -283, 384, 124, 15, '#040914');
+
+  // Top Sequential LED Shift Light Array (12 bright LEDs)
+  const ledCount = 12;
+  const ledW = 24, ledGap = 5;
+  const totalLedW = ledCount * (ledW + ledGap) - ledGap;
+  const rpmRatio = Math.max(0, Math.min(1, (rpm - 1200) / 9800));
+  for (let i = 0; i < ledCount; i++) {
+    const lx = -totalLedW / 2 + i * (ledW + ledGap);
+    const active = rpmRatio * ledCount > i;
+    const col = i < 6 ? '#00ff88' : i < 9 ? '#ffbe0b' : '#ff1e42';
+    g.save();
+    if (active) { g.shadowColor = col; g.shadowBlur = 10; }
+    g.fillStyle = active ? col : 'rgba(255,255,255,0.08)';
+    g.beginPath(); g.roundRect(lx, -276, ledW, 8, 3); g.fill();
+    g.restore();
+  }
+
+  // Sweeping Digital Tachometer Bar across top of TFT
+  g.fillStyle = 'rgba(255,255,255,0.08)';
+  g.fillRect(-178, -261, 356, 12);
+  const rpmGrad = lg(g, -178, 0, 178, 0, ['#00e5ff', '#00ff88', '#ffbe0b', '#ff1e42']);
+  g.fillStyle = rpmGrad;
+  g.fillRect(-178, -261, 356 * rpmRatio, 12);
+
+  // LEFT: Crisp Digital Speedometer Readout
+  g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillStyle = '#7dd3fc';
+  g.font = '800 12px system-ui';
+  g.fillText('SPEED', -176, -234);
+
+  g.fillStyle = '#ffffff';
+  g.shadowColor = '#00e5ff';
+  g.shadowBlur = 14;
+  g.font = '900 62px system-ui';
+  g.fillText(String(Math.round(dV)).padStart(3, '0'), -178, -196);
+  g.shadowBlur = 0;
+
+  g.fillStyle = '#00e5ff';
+  g.font = '800 14px system-ui';
+  g.fillText('KM/H', -58, -182);
+
+  // CENTER: Large Gear Indicator Box
+  R_(-22, -242, 62, 74, 12, 'rgba(0, 229, 255, 0.12)');
+  g.strokeStyle = 'rgba(0, 229, 255, 0.45)'; g.lineWidth = 2;
+  g.beginPath(); g.roundRect(-22, -242, 62, 74, 12); g.stroke();
+  g.textAlign = 'center';
+  g.fillStyle = '#7dd3fc'; g.font = '800 10px system-ui';
+  g.fillText('GEAR', 9, -231);
+  g.fillStyle = '#00ff9d'; g.font = '900 44px system-ui';
+  g.fillText(gear, 9, -197);
+
+  // RIGHT: Analog/Arc Speed + RPM & Telemetry Bars
+  const dialX = 116, dialY = -204, dialR = 38;
+  g.strokeStyle = 'rgba(255,255,255,0.14)'; g.lineWidth = 6;
+  g.beginPath(); g.arc(dialX, dialY, dialR, 0.75 * Math.PI, 2.25 * Math.PI); g.stroke();
+
+  const spdRatio = Math.min(1, dV / B.effTop);
+  g.strokeStyle = '#00e5ff'; g.lineWidth = 6;
+  g.beginPath(); g.arc(dialX, dialY, dialR, 0.75 * Math.PI, 0.75 * Math.PI + 1.5 * Math.PI * spdRatio); g.stroke();
+
+  const na = 0.75 * Math.PI + 1.5 * Math.PI * spdRatio;
+  g.strokeStyle = '#ff2a5f'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(dialX, dialY); g.lineTo(dialX + Math.cos(na) * (dialR - 5), dialY + Math.sin(na) * (dialR - 5)); g.stroke();
+
+  g.fillStyle = '#cbd5e1'; g.font = '700 10px system-ui';
+  g.fillText((Math.round(rpm / 100) / 10).toFixed(1) + 'k RPM', dialX, dialY + 26);
+
+  // Status Pills at bottom of TFT: NOS, ABS/BRK, INTEGRITY
+  g.textAlign = 'left'; g.font = '800 10px system-ui';
+  g.fillStyle = nos > 0.2 ? '#00ff9d' : '#475569';
+  g.fillText(`NOS ${Math.round(nos * 100)}%`, 62, -168);
+  g.fillStyle = I.brk ? '#ff2a5f' : '#475569';
+  g.fillText('ABS', 132, -168);
+
+  g.restore();
+}
+
+function nosBar() {
+  // Top-left compact telemetry HUD (NOS + Bike Integrity)
+  g.save();
+  R_(14, 62, 168, 28, 8, 'rgba(6, 10, 20, 0.65)');
+  // NOS Bar
+  g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(22, 69, 95, 6);
+  g.fillStyle = I.nos && nos > 0 ? '#00ff9d' : '#00e5ff'; g.fillRect(22, 69, 95 * nos, 6);
+  g.fillStyle = '#fff'; g.font = '800 9px system-ui'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  g.fillText('NOS', 123, 72);
+
+  // Integrity Bar
+  g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(22, 79, 95, 5);
+  g.fillStyle = hp > 50 ? '#22c55e' : hp > 25 ? '#f59e0b' : '#ef4444';
+  g.fillRect(22, 79, 95 * (hp / 100), 5);
+  g.fillStyle = '#cbd5e1'; g.fillText('HP ' + hp + '%', 123, 81);
+  g.restore();
+
+  if (I.nos && nos > 0 && I.gas && !dead) {
+    g.globalCompositeOperation = 'lighter';
+    g.strokeStyle = 'rgba(0, 229, 255, 0.35)';
+    g.lineWidth = 2;
+    for (let i = 0; i < 24; i++) {
+      const a = Math.random() * 6.283, d1 = Math.max(W, H) * (0.32 + Math.random() * 0.2), d2 = d1 + Math.max(W, H) * 0.2;
+      g.beginPath();
+      g.moveTo(W / 2 + Math.cos(a) * d1, H * 0.45 + Math.sin(a) * d1 * 0.7);
+      g.lineTo(W / 2 + Math.cos(a) * d2, H * 0.45 + Math.sin(a) * d2 * 0.7);
+      g.stroke();
+    }
+    g.globalCompositeOperation = 'source-over';
+  }
+}
+
+function gauge() {
+  // 3rd-person bottom center speedometer
+  const cx = W / 2, cy = H - gR - 10, R = gR, a0 = 0.75 * Math.PI, sw = 1.5 * Math.PI, M = Math.max(360, B.effTop), sp = Math.min(M, dV);
+  g.beginPath(); g.arc(cx, cy, R + 6, 0, 7); g.fillStyle = 'rgba(6, 10, 20, 0.82)'; g.fill();
+  g.lineWidth = 2; g.strokeStyle = 'rgba(0, 229, 255, 0.35)'; g.stroke();
+
+  g.lineWidth = Math.max(3, R * 0.075); g.lineCap = 'butt';
+  g.strokeStyle = 'rgba(255,255,255,0.1)'; g.beginPath(); g.arc(cx, cy, R * 0.88, a0, a0 + sw); g.stroke();
+  g.strokeStyle = 'hsl(' + (190 - sp * 0.45) + ', 100%, 55%)';
+  g.beginPath(); g.arc(cx, cy, R * 0.88, a0, a0 + sw * sp / M); g.stroke();
+
+  g.fillStyle = '#cfe'; g.font = '700 ' + Math.max(8, R * 0.1) + 'px system-ui';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,255,255,0.7)';
+  for (let s = 0; s <= M; s += 20) {
+    const a = a0 + sw * s / M, big = s % 60 === 0;
+    g.beginPath();
+    g.moveTo(cx + Math.cos(a) * R * (big ? 0.7 : 0.76), cy + Math.sin(a) * R * (big ? 0.7 : 0.76));
+    g.lineTo(cx + Math.cos(a) * R * 0.8, cy + Math.sin(a) * R * 0.8);
+    g.stroke();
+    if (big) g.fillText(s, cx + Math.cos(a) * R * 0.58, cy + Math.sin(a) * R * 0.58);
+  }
+  const na = a0 + sw * sp / M;
+  g.strokeStyle = '#ff2a5f'; g.lineWidth = 2.5;
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(na) * R * 0.78, cy + Math.sin(na) * R * 0.78); g.stroke();
+  g.fillStyle = '#ff2a5f'; g.beginPath(); g.arc(cx, cy, R * 0.06, 0, 7); g.fill();
+
+  g.fillStyle = '#00e5ff'; g.font = '800 ' + R * 0.1 + 'px system-ui'; g.fillText('GEAR', cx, cy - R * 0.46);
+  g.font = '900 ' + R * 0.34 + 'px system-ui'; g.fillText(gear, cx, cy - R * 0.26);
+  g.fillStyle = '#fff'; g.font = '900 ' + R * 0.32 + 'px system-ui'; g.fillText(Math.round(dV), cx, cy + R * 0.3);
+  g.fillStyle = '#9ab'; g.font = '700 ' + R * 0.1 + 'px system-ui'; g.fillText('KM/H', cx, cy + R * 0.5);
+
+  const lw = R * 1.3, sg = 14;
+  for (let i = 0; i < sg; i++) {
+    const on = (rpm - 1200) / 9800 * sg > i;
+    g.fillStyle = on ? (i < 8 ? '#00ff88' : i < 11 ? '#ffbe0b' : '#ff2a5f') : 'rgba(255,255,255,0.12)';
+    g.fillRect(cx - lw / 2 + i * lw / sg, cy + R * 0.66, lw / sg - 2, R * 0.1);
+  }
+}
+
+// ============================================================================
+// SCREEN DAMAGE OVERLAY: CRACKED VISOR + BLOOD SPLATTER
+// ============================================================================
+function renderDamageOverlay() {
+  if (bloodSplatters.length === 0 && screenCracks.length === 0) return;
+
+  g.save();
+  // Blood splatters & drips
+  for (const b of bloodSplatters) {
+    g.fillStyle = `rgba(165, 8, 22, ${b.alpha})`;
+    g.beginPath();
+    g.arc(b.x, b.y, b.r * 0.55, 0, Math.PI * 2);
+    g.fill();
+    // Vertical blood drip
+    g.beginPath();
+    g.roundRect(b.x - b.r * 0.12, b.y, b.r * 0.24, b.r * 0.6 + b.drip, b.r * 0.12);
+    g.fill();
+    for (const dr of b.drops) {
+      g.beginPath();
+      g.arc(b.x + dr.dx, b.y + dr.dy, dr.r, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  // Visor Glass Cracks
+  for (const cr of screenCracks) {
+    g.strokeStyle = `rgba(235, 248, 255, ${cr.alpha})`;
+    g.lineWidth = 1.6;
+    for (const br of cr.branches) {
+      g.beginPath();
+      br.forEach((pt, idx) => {
+        if (idx === 0) g.moveTo(pt.x, pt.y);
+        else g.lineTo(pt.x, pt.y);
+      });
+      g.stroke();
+    }
+    // Impact web rings
+    g.strokeStyle = `rgba(255, 255, 255, ${cr.alpha * 0.5})`;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.arc(cr.cx, cr.cy, 16, 0, Math.PI * 2);
+    g.stroke();
+  }
+  g.restore();
+}
+
+function render(dt) {
+  const P = PAL[S.time], night = S.time === 2, sx = W * 0.72, sy = hY - H * 0.14;
+  lights.length = 0;
+
+  g.save();
+  if (shake > 0) g.translate((Math.random() - 0.5) * shake * 12, (Math.random() - 0.5) * shake * 12);
+
+  // Sky Gradient
+  let gd = g.createLinearGradient(0, 0, 0, hY);
+  gd.addColorStop(0, P.sk[0]); gd.addColorStop(0.6, P.sk[1]); gd.addColorStop(1, P.sk[2]);
+  g.fillStyle = gd; g.fillRect(-20, -20, W + 40, hY + 22);
+
+  if (night) {
+    g.fillStyle = '#fff';
+    for (const s of stars) { g.globalAlpha = 0.3 + s[2] * 0.7; g.fillRect(s[0] * W, s[1] * hY, 1.5, 1.5); }
+    g.globalAlpha = 1;
+    gd = g.createRadialGradient(sx, sy, 0, sx, sy, H * 0.12);
+    gd.addColorStop(0, '#fff'); gd.addColorStop(0.12, '#e8eeff');
+    gd.addColorStop(0.14, 'rgba(150,180,255,0.25)'); gd.addColorStop(1, 'rgba(150,180,255,0)');
+  } else {
+    gd = g.createRadialGradient(sx, sy, 0, sx, sy, H * 0.3);
+    gd.addColorStop(0, '#fffbe8'); gd.addColorStop(0.06, 'rgba(255,248,210,0.95)');
+    gd.addColorStop(0.2, 'rgba(255,225,160,0.35)'); gd.addColorStop(1, 'rgba(255,200,140,0)');
+  }
+  g.fillStyle = gd; g.fillRect(sx - H * 0.32, sy - H * 0.32, H * 0.64, H * 0.64);
+
+  g.fillStyle = night ? 'rgba(120,130,170,0.15)' : 'rgba(255,255,255,0.55)';
+  for (const c of cl) {
+    const x = ((c[0] + bgx * 0.15) % (W + 500) + W + 500) % (W + 500) - 250, y = hY * c[1] * 0.9, s = c[2] * H * 0.1;
+    g.beginPath();
+    g.ellipse(x, y, s * 1.6, s * 0.32, 0, 0, 7);
+    g.ellipse(x + s * 0.7, y - s * 0.18, s * 0.9, s * 0.3, 0, 0, 7);
+    g.ellipse(x - s * 0.8, y - s * 0.08, s * 0.8, s * 0.26, 0, 0, 7);
+    g.fill();
+  }
+  mount(bgx * 0.2, H * 0.15, P.mt[0], 0.005);
+  mount(bgx * 0.5, H * 0.1, P.mt[1], 0.01);
+  mount(bgx, H * 0.06, P.mt[2], 0.02);
+
+  g.fillStyle = '#2a8040'; g.fillRect(-20, hY, W + 40, H - hY + 20);
+
+  const bi = Math.floor(pos / SL) % N, bs = segs[bi], bp = (pos % SL) / SL;
+  const ps = segs[Math.floor((pos + PZ) / SL) % N], pp = ((pos + PZ) % SL) / SL;
+  camY = CH + ps.y + (segs[(ps.i + 1) % N].y - ps.y) * pp;
+  cx0 = px * RW;
+
+  for (const c of cars) { const s = segs[Math.floor(c.z / SL) % N]; (s.c || (s.c = [])).push(c); }
+  let x = 0, dx = -bs.curve * bp, maxY = H;
+  const fm = S.wx ? 1.35 : 1;
+
+  for (let n = 0; n < DN; n++) {
+    const s = segs[(bi + n) % N], cz1 = (bi + n) * SL - pos, cz2 = cz1 + SL;
+    const p1 = pr(s.y, cz1 < CD ? CD : cz1, x), p2 = pr(segs[(s.i + 1) % N].y, cz2, x + dx);
+    s.p1 = p1; s.p2 = p2;
+    s.hid = cz1 <= CD || p2.y >= p1.y || p2.y >= maxY;
+    x += dx; dx += s.curve;
+    if (s.hid) continue;
+
+    const i = s.i, h = s.h, hh = p1.y - p2.y + 0.7, near = n < DN * 0.55;
+    g.fillStyle = 'hsl(128,' + (36 + h * 8 | 0) + '%,' + (31 + h * 4 + (i % 40 < 20 ? 1.5 : 0)) + '%)';
+    g.fillRect(0, p2.y, W, hh);
+
+    const rc = Math.floor(i / 5) % 2 ? '#d92b2b' : '#f2f2f2';
+    st(p1, p2, -1.24, 0.1, '#5d6269'); st(p1, p2, 1.24, 0.1, '#5d6269');
+    st(p1, p2, -1.08, 0.05, rc); st(p1, p2, 1.08, 0.05, rc);
+    if (S.sc) { st(p1, p2, -1.62, 0.34, '#7a7d84'); st(p1, p2, 1.62, 0.34, '#7a7d84'); }
+
+    const d = h * 6 | 0;
+    st(p1, p2, 0, 1, 'rgb(' + (52 + d) + ',' + (55 + d) + ',' + (63 + d) + ')');
+    if (near) {
+      g.fillStyle = 'rgba(0,0,0,0.16)'; g.beginPath();
+      for (const c of [-0.667, 0, 0.667]) for (const o of [-0.12, 0.12]) {
+        const a = c + o, b = 0.045;
+        g.moveTo(p1.x + p1.w * (a - b), p1.y + 0.7); g.lineTo(p1.x + p1.w * (a + b), p1.y + 0.7);
+        g.lineTo(p2.x + p2.w * (a + b), p2.y); g.lineTo(p2.x + p2.w * (a - b), p2.y);
+      }
+      g.fill();
+      if (h > 0.88) st(p1, p2, h * 9 % 1.5 - 0.75, 0.14, 'rgba(15,15,20,0.2)');
+      if (h < 0.1) st(p1, p2, h * 9 - 0.5, 0.05, 'rgba(255,255,255,0.07)');
+    }
+    st(p1, p2, -0.93, 0.012, '#f2f2f2'); st(p1, p2, 0.93, 0.012, '#f2f2f2');
+    if (Math.floor(i / 6) % 2) { st(p1, p2, -0.333, 0.012, '#ececec'); st(p1, p2, 0.333, 0.012, '#ececec'); }
+
+    for (const sd of S.sc ? [] : [-1, 1]) {
+      const a1 = p1.x + sd * p1.w * 1.16, a2 = p2.x + sd * p2.w * 1.16, t1 = p1.w * 0.1 * K / Kx, t2 = p2.w * 0.1 * K / Kx;
+      g.fillStyle = lg(g, 0, p1.y - t1, 0, p1.y, ['#e9edf2', '#8f98a3', '#59616b']);
+      g.beginPath(); g.moveTo(a1, p1.y); g.lineTo(a2, p2.y); g.lineTo(a2, p2.y - t2); g.lineTo(a1, p1.y - t1); g.fill();
+    }
+    const f = Math.min(1, (1 - Math.exp(-Math.pow(n / DN * 2.4, 2))) * fm);
+    g.fillStyle = 'rgba(' + P.fg + ',' + f + ')'; g.fillRect(0, p2.y, W, hh);
+    maxY = p2.y;
+  }
+
+  for (let n = DN - 1; n > 0; n--) {
+    const s = segs[(bi + n) % N];
+    if (s.hid) continue;
+    const p = s.p1, w = p.w, f = Math.max(0.06, Math.exp(-Math.pow(n / DN * 2.4, 2)) / fm);
+    g.globalAlpha = f;
+    if (w > 3) {
+      const i = s.i, hv = s.h;
+      if (i % 5 === 0) tree(p.x - w * (1.55 + hv * 2.4), p.y, w * (0.5 + hv * 0.3), i % 2);
+      if (i % 7 === 3) tree(p.x + w * (1.55 + hs(i + 9) * 2.4), p.y, w * (0.5 + hv * 0.3), (i + 1) % 2);
+      if (S.sc && i % 4 === 1) bld(p.x - w * (2.2 + hv * 0.6), p.y, w, hv, -1);
+      if (S.sc && i % 4 === 3) bld(p.x + w * (2.2 + hv * 0.6), p.y, w, hs(i + 5), 1);
+      if (i % 20 === 10) {
+        const lh = w * K / Kx * 0.95;
+        g.strokeStyle = '#8f98a3'; g.lineWidth = Math.max(1, w * 0.02);
+        for (const sd of [-1, 1]) {
+          g.beginPath(); g.moveTo(p.x + sd * w * 1.3, p.y); g.lineTo(p.x + sd * w * 1.3, p.y - lh); g.lineTo(p.x + sd * w * 1.1, p.y - lh * 1.03); g.stroke();
+          lights.push([p.x + sd * w * 1.1, p.y - lh * 1.03, w * 0.35, '255,214,140']);
+        }
+      }
+      if (i % 560 === 0) {
+        const gh = w * K / Kx * 1.2;
+        g.fillStyle = '#6f7882'; g.fillRect(p.x - w * 1.3, p.y - gh, w * 0.05, gh); g.fillRect(p.x + w * 1.25, p.y - gh, w * 0.05, gh);
+        g.fillStyle = '#0b6b3a'; g.fillRect(p.x - w * 1.3, p.y - gh, w * 2.6, gh * 0.28);
+        g.strokeStyle = '#fff'; g.lineWidth = Math.max(1, w * 0.01); g.strokeRect(p.x - w * 1.27, p.y - gh * 0.98, w * 2.54, gh * 0.24);
+        if (w > 60) {
+          g.fillStyle = '#fff'; g.font = '700 ' + gh * 0.14 + 'px system-ui';
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('APEX HIGHWAY  ▸  EXIT 12', p.x, p.y - gh * 0.86);
+        }
+      }
+    }
+    if (s.c) {
+      for (const c of s.c) {
+        const t = (c.z % SL) / SL, q = s.p2, cw = p.w + (q.w - p.w) * t;
+        if (cw > 2) carS2(p.x + (q.x - p.x) * t + cw * c.x, p.y + (q.y - p.y) * t, cw, c);
+      }
+    }
+    g.globalAlpha = 1;
+  }
+  for (const c of cars) segs[Math.floor(c.z / SL) % N].c = null;
+
+  // High-speed radial wind lines
+  if (v > 140 && !dead) {
+    g.strokeStyle = 'rgba(255,255,255,' + (v - 140) / 260 * 0.35 + ')';
+    g.lineWidth = 1.5;
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * 6.283, d1 = Math.max(W, H) * (0.32 + Math.random() * 0.2), d2 = d1 + Math.max(W, H) * (0.08 + Math.random() * 0.15);
+      g.beginPath(); g.moveTo(W / 2 + Math.cos(a) * d1, hY + Math.sin(a) * d1 * 0.8); g.lineTo(W / 2 + Math.cos(a) * d2, hY + Math.sin(a) * d2 * 0.8); g.stroke();
+    }
+  }
+
+  // Render Superbike in 3rd Person OR Ragdoll/Tumbling Bike on Death!
+  if (!cam || dead) {
+    g.save();
+    if (dead) {
+      g.translate(W / 2 + bikeFlyX, bikeY + bikeFlyY);
+      g.rotate(bikeSpin);
+    } else {
+      g.translate(W / 2, bikeY);
+    }
+    drawSuperbikeRear(g, u, B, dead ? 0 : lean, I.brk, pos * 0.02);
+    g.restore();
+    if (!dead) {
+      lights.push([W / 2 + Math.sin(lean) * u * 0.4, bikeY - 2.45 * u, u * (I.brk ? 1.9 : 0.85), I.brk ? '255,40,40' : '255,20,20']);
+    }
+  }
+
+  if (P.ov) { g.fillStyle = P.ov; g.fillRect(-20, -20, W + 40, H + 40); }
+
+  g.globalCompositeOperation = 'lighter';
+  if (night || S.time === 1) {
+    const a = night ? 0.5 : 0.1, hx = W / 2, hy = bikeY - K * 0.5;
+    gd = g.createRadialGradient(hx, hy, 0, hx, hy, K * 0.9);
+    gd.addColorStop(0, 'rgba(255,244,214,' + a + ')'); gd.addColorStop(1, 'rgba(255,244,214,0)');
+    g.fillStyle = gd; g.fillRect(0, hY, W, H - hY);
+  }
+  for (const l of lights) {
+    const al = night ? 0.9 : 0.5;
+    gd = g.createRadialGradient(l[0], l[1], 0, l[0], l[1], l[2]);
+    gd.addColorStop(0, 'rgba(' + l[3] + ',' + al + ')'); gd.addColorStop(1, 'rgba(' + l[3] + ',0)');
+    g.fillStyle = gd; g.fillRect(l[0] - l[2], l[1] - l[2], l[2] * 2, l[2] * 2);
+  }
+  if (!night && sx > 0 && sx < W) {
+    for (const k of [0.25, 0.5, 0.8, 1.2]) {
+      const fx = sx + (W / 2 - sx) * k, fy = sy + (H / 2 - sy) * k;
+      gd = g.createRadialGradient(fx, fy, 0, fx, fy, H * 0.05 * (1.4 - k * 0.5));
+      gd.addColorStop(0, 'rgba(255,230,180,0.13)'); gd.addColorStop(1, 'rgba(255,230,180,0)');
+      g.fillStyle = gd; g.fillRect(fx - H * 0.08, fy - H * 0.08, H * 0.16, H * 0.16);
+    }
+  }
+  if (Math.abs(px) > 1.1 && v > 20 && !dead) {
+    g.strokeStyle = '#ffb040'; g.lineWidth = 2; const sd = px > 0 ? 1 : -1;
+    for (let i = 0; i < 10; i++) {
+      const sx2 = W / 2 + sd * u * (1.6 + Math.random() * 0.8), sy2 = bikeY - Math.random() * u;
+      g.beginPath(); g.moveTo(sx2, sy2); g.lineTo(sx2 + sd * (6 + Math.random() * 16), sy2 + 4 + Math.random() * 10); g.stroke();
+    }
+  }
+  // Crash Sparks
+  for (const sp of sparks) {
+    g.fillStyle = sp.col;
+    g.fillRect(sp.x, sp.y, 4, 4);
+  }
+  g.globalCompositeOperation = 'source-over';
+
+  // 1st-Person Cockpit (only when alive & in 1st person)
+  if (cam && !dead) cockpit();
+
+  // Rain
+  if (S.wx) {
+    g.fillStyle = 'rgba(60,72,92,0.2)'; g.fillRect(-20, -20, W + 40, H + 40);
+    g.strokeStyle = 'rgba(205,220,240,0.45)'; g.lineWidth = 1; g.beginPath();
+    for (const r of rain) {
+      r[1] = (r[1] + dt * r[2] * 1.6) % 1;
+      const rx = r[0] * W, ry = r[1] * H;
+      g.moveTo(rx, ry); g.lineTo(rx - 4, ry + 16);
+    }
+    g.stroke();
+  }
+
+  // Screen Cracks & Blood Splatter Overlay
+  renderDamageOverlay();
+
+  g.restore();
+  g.fillStyle = vig; g.fillRect(0, 0, W, H);
+  if (flash > 0) { g.fillStyle = 'rgba(255, 25, 45, ' + flash * 0.4 + ')'; g.fillRect(0, 0, W, H); }
+
+  dV += (v - dV) * Math.min(1, dt * 8);
+  if (!cam && !dead) gauge();
+  nosBar();
+
+  const mt = Math.floor(T / 60) + ':' + String(Math.floor(T % 60)).padStart(2, '0');
+  g.textBaseline = 'top'; g.textAlign = 'left'; g.fillStyle = '#fff'; g.font = '800 14px system-ui';
+  g.shadowColor = '#000'; g.shadowBlur = 4;
+  g.fillText(`${B.name}   ·   ${(dist / 144 / 1000).toFixed(2)} KM   ·   ${mt}`, 14, 14);
+  g.fillStyle = '#94a3b8'; g.font = '700 13px system-ui';
+  g.fillText(`PASSED ${passed}   ·   TOP ${Math.round(topV)} KM/H`, 14, 34);
+
+  if (msgT > 0 && !dead) {
+    msgT -= dt;
+    g.globalAlpha = Math.min(1, msgT);
+    g.textAlign = 'center'; g.font = '900 32px system-ui';
+    g.fillStyle = msgS.includes('IMPACT') ? '#ff3b5c' : '#ffd23f';
+    g.fillText(msgS, W / 2, H * 0.16);
+    g.globalAlpha = 1;
+  }
+  g.shadowBlur = 0;
+}
+
+let last = performance.now();
+function loop(t) {
+  const dt = Math.min(0.05, (t - last) / 1000);
+  last = t;
+  if (go) {
+    upd(dt);
+    bgx -= segs[Math.floor((pos + PZ) / SL) % N].curve * v * dt * 0.3;
+  } else {
+    renderGarageShowcase(t / 1000);
+  }
+  engSnd();
+  render(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
